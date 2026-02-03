@@ -15,8 +15,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <div className="hero-content">
           <h2>Development Tools For Web3 Game Builders On Stellar</h2>
           <p>
-            Build with Stellar Game Studio to wire points-based mechanics, deterministic outcomes,
-            and multi-player flows.
+            Ecosystem ready game templates and examples ready to scaffold into into your development workflow
           </p>
           <div className="hero-actions">
             <button type="button" onClick={() => onNavigate('games')}>
@@ -103,17 +102,17 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <div className="command-card">
             <h4>Contracts only</h4>
             <p>Build all Soroban contracts or a single game.</p>
-            <code>bun run build [game]</code>
+            <code>bun run build my-game</code>
           </div>
           <div className="command-card">
             <h4>Deploy + IDs</h4>
             <p>Deploy contracts to testnet (all or one) and write contract IDs.</p>
-            <code>bun run deploy [game]</code>
+            <code>bun run deploy my-game</code>
           </div>
           <div className="command-card">
             <h4>Generate bindings</h4>
             <p>Create TypeScript bindings for all or one contract.</p>
-            <code>bun run bindings [game]</code>
+            <code>bun run bindings my-game</code>
           </div>
           <div className="command-card">
             <h4>Create a game</h4>
@@ -125,41 +124,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <p>Export a standalone build for hosting.</p>
             <code>bun run publish my-game</code>
           </div>
-          <div className="command-card">
-            <h4>Studio dev server</h4>
-            <p>Run the studio frontend locally.</p>
-            <code>bun run dev</code>
-          </div>
-          <div className="command-card">
-            <h4>Build docs</h4>
-            <p>Emit the studio site into the repo <code>docs/</code> folder.</p>
-            <code>bun --cwd=sgs_frontend run build:docs</code>
-          </div>
         </div>
       </section>
 
-      <section className="integration-section">
-        <div className="section-header">
-          <h3>Why Game Hub?</h3>
-          <p>Use a shared contract to coordinate points, sessions, and outcomes.</p>
-        </div>
-        <div className="integration-grid">
-          <div className="integration-card">
-            <h4>Reusable Templates</h4>
-            <p>Ship faster with pre-built game contract and frontend templates & examples.</p>
-          </div>
-          <div className="integration-card">
-            <h4>Ecosystem Ready</h4>
-            <p>Ensure your game is compatible with the emerging Stellar gaming ecosystem.</p>
-          </div>
-          <div className="integration-card">
-            <h4>Zero Knowledge</h4>
-            <p>
-              Use Stellar's latest zk integrations to build games with RiscZERO & Noir technology.
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

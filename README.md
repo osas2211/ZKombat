@@ -54,10 +54,6 @@ bun run bindings [contract-name...]   # Generate bindings for all or selected co
 bun run create my-game                # Scaffold contract + standalone frontend
 bun run dev:game my-game              # Run a standalone frontend with dev wallet switching
 bun run publish my-game --build        # Export + build production frontend
-
-# Documentation site
-bun --cwd=sgs_frontend run dev         # Local docs dev server
-bun --cwd=sgs_frontend run build:docs  # Build docs into docs/
 ```
 
 ## Requirements
@@ -71,3 +67,15 @@ bun --cwd=sgs_frontend run build:docs  # Build docs into docs/
 
 - Dev wallets are generated during `bun run setup` and stored in the root `.env`.
 - Production builds read runtime config from `public/game-studio-config.js`.
+
+## Studio Reference
+
+Run the studio frontend locally (from `sgs_frontend/`):
+```bash
+bun run dev
+```
+
+Build docs into `docs/`:
+```bash
+bun --cwd=sgs_frontend run build:docs
+```

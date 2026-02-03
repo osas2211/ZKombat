@@ -88,8 +88,9 @@
 
 .brand-subtitle {
   color: var(--color-ink-muted);
-  font-size: 1.05rem;
+  font-size: 0.6rem;
   margin: 0;
+  text-align: left;
 }
 
 .header-actions {

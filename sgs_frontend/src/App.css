@@ -92,19 +92,6 @@
   font-weight: 600;
 }
 
-.docs-hero .hero-steps li::before {
-  counter-increment: steps;
-  content: counter(steps);
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--color-accent);
-  color: var(--color-ink);
-  font-size: 0.85rem;
-}
-
 .docs-hero .hero-code {
   background: rgba(15, 15, 15, 0.06);
   border-radius: var(--radius-md);
