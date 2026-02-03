@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { $ } from 'bun';
 import {
   existsSync,
   mkdirSync,
@@ -12,7 +13,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 function usage() {
-  console.log(`\nUsage: bun run create <game-slug> [--force]\n`);
+  console.log(`\nUsage: bun run create <game-slug> [--force] [--skip-setup]\n`);
 }
 
 function isValidSlug(slug: string): boolean {
@@ -115,6 +116,7 @@ if (args.length === 0 || args.includes('--help')) {
 
 const gameSlug = args[0];
 const force = args.includes('--force');
+const skipSetup = args.includes('--skip-setup') || args.includes('--no-setup');
 
 if (!isValidSlug(gameSlug)) {
   console.error(`\n❌ Invalid game slug: ${gameSlug}`);
@@ -681,11 +683,50 @@ if (existsSync(indexPath)) {
   }
 }
 
+async function runSetupSteps() {
+  console.log('  • Building contract...');
+  await $`bun run build ${gameSlug}`.cwd(repoRoot);
+
+  console.log('  • Deploying contract to testnet...');
+  await $`bun run deploy ${gameSlug}`.cwd(repoRoot);
+
+  console.log('  • Generating bindings...');
+  await $`bun run bindings ${gameSlug}`.cwd(repoRoot);
+
+  const wasmName = gameSlug.replace(/-/g, '_');
+  const bindingsSource = path.join(repoRoot, 'bindings', wasmName, 'src', 'index.ts');
+  const bindingsDest = path.join(newGameDir, 'bindings.ts');
+
+  if (existsSync(bindingsSource)) {
+    writeFileSync(bindingsDest, readFileSync(bindingsSource, 'utf8'));
+    console.log('  • Updated frontend bindings');
+  } else {
+    console.warn(`  ⚠️  Bindings file not found at ${bindingsSource}`);
+  }
+}
+
 console.log('✅ Contract and frontend created');
+if (!skipSetup) {
+  console.log('🚀 Running build + deploy + bindings...');
+  try {
+    await runSetupSteps();
+  } catch (error) {
+    console.error('\n❌ Setup failed. You can retry manually with:');
+    console.error(`  bun run build ${gameSlug}`);
+    console.error(`  bun run deploy ${gameSlug}`);
+    console.error(`  bun run bindings ${gameSlug}`);
+    process.exit(1);
+  }
+}
+
 console.log('Next steps:');
 console.log(`  1) Review contracts/${gameSlug}/src/lib.rs`);
-console.log(`  2) bun run build ${gameSlug}`);
-console.log(`  3) bun run deploy ${gameSlug}`);
-console.log(`  4) bun run bindings ${gameSlug}`);
-console.log(`  5) bun run dev:game ${gameSlug}`);
+if (skipSetup) {
+  console.log(`  2) bun run build ${gameSlug}`);
+  console.log(`  3) bun run deploy ${gameSlug}`);
+  console.log(`  4) bun run bindings ${gameSlug}`);
+  console.log(`  5) bun run dev:game ${gameSlug}`);
+} else {
+  console.log(`  2) bun run dev:game ${gameSlug}`);
+}
 console.log(`     (or cd ${frontendSlug} && bun install && bun run dev)`);
