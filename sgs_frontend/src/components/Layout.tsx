@@ -25,7 +25,10 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
             <img className="brand-logo" src={studioLogo} alt="Stellar Game Studio logo" />
             <div className="brand-copy">
               <div className="brand-title">Stellar Game Studio</div>
-              <p className="brand-subtitle">A DEVELOPER TOOLKIT FOR BUILDING WEB3 GAMES ON STELLAR</p>
+              <div className="brand-subtitle-row">
+                <p className="brand-subtitle">A DEVELOPER TOOLKIT FOR BUILDING WEB3 GAMES ON STELLAR</p>
+                <span className="brand-version">v0.1.2</span>
+              </div>
             </div>
           </div>
           <nav className="header-nav">

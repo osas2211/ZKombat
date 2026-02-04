@@ -125,6 +125,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  flex: 1;
+}
+
+.brand-subtitle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .brand-logo {
@@ -146,6 +154,14 @@
   font-size: 0.6rem;
   margin: 0;
   text-align: left;
+  flex: 1;
+}
+
+.brand-version {
+  color: var(--color-ink-muted);
+  font-size: 0.6rem;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .header-actions {
