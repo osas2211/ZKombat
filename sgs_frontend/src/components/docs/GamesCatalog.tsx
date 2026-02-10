@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { TwentyOneGame } from "../../games/twenty-one/TwentyOneGame"
 import { NumberGuessGame } from "../../games/number-guess/NumberGuessGame"
 import { DiceDuelGame } from "../../games/dice-duel/DiceDuelGame"
@@ -31,11 +32,8 @@ const games = [
   },
 ]
 
-interface GamesCatalogProps {
-  onBack?: () => void
-}
-
-export function GamesCatalog({ onBack }: GamesCatalogProps) {
+export function GamesCatalog() {
+  const navigate = useNavigate()
   const [selectedGame, setSelectedGame] = useState<string | null>(null)
   const { publicKey, isConnected, isConnecting, error } = useWallet()
 
@@ -91,11 +89,9 @@ export function GamesCatalog({ onBack }: GamesCatalogProps) {
   return (
     <div className="library-page">
       <div className="library-header">
-        {onBack ? (
-          <button className="btn-secondary" onClick={onBack}>
-            Back to Studio
-          </button>
-        ) : null}
+        <button className="btn-secondary" onClick={() => navigate("/studio")}>
+          Back to Studio
+        </button>
         <div className="library-intro">
           <h2>Games Library</h2>
           <p>Choose a template to play now or fork into your own title.</p>

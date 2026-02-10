@@ -1,12 +1,9 @@
+import { useNavigate } from "react-router-dom"
 import { useWallet } from "@/hooks/useWallet"
-import type { Page } from "../types/navigation"
 import "../components/docs/GamesCatalog.css"
 
-interface HomePageProps {
-  onNavigate: (page: Page) => void
-}
-
-export function HomePage({ onNavigate }: HomePageProps) {
+export function StudioHomePage() {
+  const navigate = useNavigate()
   const { isConnected, isConnecting, error } = useWallet()
 
   return (
@@ -19,13 +16,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
             into your Stellar game development workflow
           </p>
           <div className="hero-actions">
-            <button type="button" onClick={() => onNavigate("games")}>
+            <button type="button" onClick={() => navigate("/studio/games")}>
               Explore Games
             </button>
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => onNavigate("docs")}
+              onClick={() => navigate("/studio/docs")}
             >
               Open Docs
             </button>

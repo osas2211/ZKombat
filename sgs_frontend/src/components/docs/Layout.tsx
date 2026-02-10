@@ -1,15 +1,9 @@
+import { NavLink, Outlet } from "react-router-dom"
 import { WalletSwitcher } from "./WalletSwitcher"
-import type { Page } from "../../types/navigation"
 import studioLogo from "../../assets/logo.svg"
 import "./Layout.css"
 
-interface LayoutProps {
-  children: React.ReactNode
-  currentPage: Page
-  onNavigate: (page: Page) => void
-}
-
-export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
+export function Layout() {
   return (
     <div className="studio">
       <div className="studio-background" aria-hidden="true">
@@ -38,30 +32,31 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
             </div>
           </div>
           <nav className="header-nav">
-            <button
-              type="button"
-              className={`header-link ${currentPage === "home" ? "active" : ""}`}
-              onClick={() => onNavigate("home")}
-              aria-current={currentPage === "home" ? "page" : undefined}
+            <NavLink
+              to="/studio"
+              end
+              className={({ isActive }) =>
+                `header-link ${isActive ? "active" : ""}`
+              }
             >
               Studio
-            </button>
-            <button
-              type="button"
-              className={`header-link ${currentPage === "games" ? "active" : ""}`}
-              onClick={() => onNavigate("games")}
-              aria-current={currentPage === "games" ? "page" : undefined}
+            </NavLink>
+            <NavLink
+              to="/studio/games"
+              className={({ isActive }) =>
+                `header-link ${isActive ? "active" : ""}`
+              }
             >
               Games Library
-            </button>
-            <button
-              type="button"
-              className={`header-link ${currentPage === "docs" ? "active" : ""}`}
-              onClick={() => onNavigate("docs")}
-              aria-current={currentPage === "docs" ? "page" : undefined}
+            </NavLink>
+            <NavLink
+              to="/studio/docs"
+              className={({ isActive }) =>
+                `header-link ${isActive ? "active" : ""}`
+              }
             >
               Documentation
-            </button>
+            </NavLink>
           </nav>
         </div>
         <div className="header-actions">
@@ -70,7 +65,9 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
         </div>
       </header>
 
-      <main className="studio-main">{children}</main>
+      <main className="studio-main">
+        <Outlet />
+      </main>
 
       <footer className="studio-footer">
         <span className="footer-meta">
