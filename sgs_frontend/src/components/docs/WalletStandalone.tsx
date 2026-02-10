@@ -1,5 +1,5 @@
-import { useWalletStandalone } from '../hooks/useWalletStandalone';
-import './WalletStandalone.css';
+import { useWalletStandalone } from "../../hooks/useWalletStandalone"
+import "./WalletStandalone.css"
 
 export function WalletStandalone() {
   const {
@@ -11,10 +11,12 @@ export function WalletStandalone() {
     network,
     connect,
     disconnect,
-  } = useWalletStandalone();
+  } = useWalletStandalone()
 
-  const address = typeof publicKey === 'string' ? publicKey : '';
-  const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
+  const address = typeof publicKey === "string" ? publicKey : ""
+  const shortAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : ""
 
   return (
     <div className="wallet-standalone">
@@ -24,7 +26,7 @@ export function WalletStandalone() {
           onClick={() => connect().catch(() => undefined)}
           disabled={!isWalletAvailable || isConnecting}
         >
-          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+          {isConnecting ? "Connecting..." : "Connect Wallet"}
         </button>
       ) : (
         <button className="wallet-standalone-button" onClick={disconnect}>
@@ -35,9 +37,11 @@ export function WalletStandalone() {
       {network && <div className="wallet-standalone-network">{network}</div>}
 
       {!isWalletAvailable && (
-        <div className="wallet-standalone-error">Wallet connection is only available in the browser.</div>
+        <div className="wallet-standalone-error">
+          Wallet connection is only available in the browser.
+        </div>
       )}
       {error && <div className="wallet-standalone-error">{error}</div>}
     </div>
-  );
+  )
 }

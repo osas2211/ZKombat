@@ -1,5 +1,5 @@
-import { Resources } from '../components/Resources';
-import '../App.css';
+import { Resources } from "../components/docs/Resources"
+import "../App.css"
 
 export function DocsPage() {
   return (
@@ -29,5 +29,5 @@ export function DocsPage() {
 
       <Resources />
     </>
-  );
+  )
 }

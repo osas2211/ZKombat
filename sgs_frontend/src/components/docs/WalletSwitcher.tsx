@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useWallet } from '../hooks/useWallet';
-import './WalletSwitcher.css';
+import { useEffect, useRef } from "react"
+import { useWallet } from "../../hooks/useWallet"
+import "./WalletSwitcher.css"
 
 export function WalletSwitcher() {
   const {
@@ -12,29 +12,29 @@ export function WalletSwitcher() {
     connectDev,
     switchPlayer,
     getCurrentDevPlayer,
-  } = useWallet();
+  } = useWallet()
 
-  const currentPlayer = getCurrentDevPlayer();
-  const hasAttemptedConnection = useRef(false);
+  const currentPlayer = getCurrentDevPlayer()
+  const hasAttemptedConnection = useRef(false)
 
   // Auto-connect to Player 1 on mount (only try once)
   useEffect(() => {
     if (!isConnected && !isConnecting && !hasAttemptedConnection.current) {
-      hasAttemptedConnection.current = true;
-      connectDev(1).catch(console.error);
+      hasAttemptedConnection.current = true
+      connectDev(1).catch(console.error)
     }
-  }, [isConnected, isConnecting, connectDev]);
+  }, [isConnected, isConnecting, connectDev])
 
   const handleSwitch = async () => {
-    if (walletType !== 'dev') return;
+    if (walletType !== "dev") return
 
-    const nextPlayer = currentPlayer === 1 ? 2 : 1;
+    const nextPlayer = currentPlayer === 1 ? 2 : 1
     try {
-      await switchPlayer(nextPlayer);
+      await switchPlayer(nextPlayer)
     } catch (err) {
-      console.error('Failed to switch player:', err);
+      console.error("Failed to switch player:", err)
     }
-  };
+  }
 
   if (!isConnected) {
     return (
@@ -51,29 +51,25 @@ export function WalletSwitcher() {
           </div>
         )}
       </div>
-    );
+    )
   }
 
   return (
     <div className="wallet-switcher">
-      {error && (
-        <div className="wallet-error">
-          {error}
-        </div>
-      )}
+      {error && <div className="wallet-error">{error}</div>}
 
       <div className="wallet-info">
         <div className="wallet-status connected">
           <span className="status-indicator"></span>
           <div className="wallet-details">
-            <div className="wallet-label">
-              Connected Player {currentPlayer}
-            </div>
+            <div className="wallet-label">Connected Player {currentPlayer}</div>
             <div className="wallet-address">
-              {publicKey ? `${publicKey.slice(0, 8)}...${publicKey.slice(-4)}` : ''}
+              {publicKey
+                ? `${publicKey.slice(0, 8)}...${publicKey.slice(-4)}`
+                : ""}
             </div>
           </div>
-          {walletType === 'dev' && (
+          {walletType === "dev" && (
             <button
               onClick={handleSwitch}
               className="switch-button"
@@ -85,5 +81,5 @@ export function WalletSwitcher() {
         </div>
       </div>
     </div>
-  );
+  )
 }

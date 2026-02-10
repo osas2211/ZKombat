@@ -1,13 +1,13 @@
-import { useWallet } from '@/hooks/useWallet';
-import type { Page } from '../types/navigation';
-import '../components/GamesCatalog.css';
+import { useWallet } from "@/hooks/useWallet"
+import type { Page } from "../types/navigation"
+import "../components/docs/GamesCatalog.css"
 
 interface HomePageProps {
-  onNavigate: (page: Page) => void;
+  onNavigate: (page: Page) => void
 }
 
 export function HomePage({ onNavigate }: HomePageProps) {
-  const { isConnected, isConnecting, error } = useWallet();
+  const { isConnected, isConnecting, error } = useWallet()
 
   return (
     <div className="studio-home">
@@ -15,13 +15,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <div className="hero-content">
           <h2>Development Tools For Web3 Game Builders On Stellar</h2>
           <p>
-            Ecosystem ready tools, templates and examples ready to scaffold into into your Stellar game development workflow
+            Ecosystem ready tools, templates and examples ready to scaffold into
+            into your Stellar game development workflow
           </p>
           <div className="hero-actions">
-            <button type="button" onClick={() => onNavigate('games')}>
+            <button type="button" onClick={() => onNavigate("games")}>
               Explore Games
             </button>
-            <button type="button" className="btn-secondary" onClick={() => onNavigate('docs')}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onNavigate("docs")}
+            >
               Open Docs
             </button>
             <a
@@ -56,9 +61,12 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <p>{error}</p>
             </>
           ) : (
-              <>
-              <h3>{isConnecting ? 'Connecting...' : 'Connect a Dev Wallet'}</h3>
-              <p>Use the switcher above to auto-connect and swap between demo players.</p>
+            <>
+              <h3>{isConnecting ? "Connecting..." : "Connect a Dev Wallet"}</h3>
+              <p>
+                Use the switcher above to auto-connect and swap between demo
+                players.
+              </p>
             </>
           )}
         </div>
@@ -67,7 +75,10 @@ export function HomePage({ onNavigate }: HomePageProps) {
       <section id="quickstart" className="quickstart-section">
         <div className="section-header">
           <h3>Quickstart</h3>
-          <p>Deploy contracts, generate bindings, and start the studio frontend in minutes.</p>
+          <p>
+            Deploy contracts, generate bindings, and start the studio frontend
+            in minutes.
+          </p>
         </div>
         <div className="quickstart-grid">
           <div className="quickstart-card">
@@ -95,15 +106,20 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <span className="ai-ready-pill">AI Ready</span>
               <h3>AI Ready</h3>
               <p>
-                This repo ships with <code>AGENTS.md</code> and <code>CLAUDE.md</code> to guide Codex and Claude
-                through the exact contract, bindings, and frontend steps required to build a Stellar game.
+                This repo ships with <code>AGENTS.md</code> and{" "}
+                <code>CLAUDE.md</code> to guide Codex and Claude through the
+                exact contract, bindings, and frontend steps required to build a
+                Stellar game.
               </p>
             </div>
             <div className="ai-ready-panel">
-              <div className="ai-ready-panel-title">What the AI gets right, fast</div>
+              <div className="ai-ready-panel-title">
+                What the AI gets right, fast
+              </div>
               <p>
-                Repo map, Game Hub rules, deterministic randomness guidance, bindings workflow, frontend wiring,
-                and QA steps are all encoded so assistants stay consistent with studio conventions.
+                Repo map, Game Hub rules, deterministic randomness guidance,
+                bindings workflow, frontend wiring, and QA steps are all encoded
+                so assistants stay consistent with studio conventions.
               </p>
               <div className="ai-ready-tags">
                 <span>Repo Map</span>
@@ -120,10 +136,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 <h4>AGENTS.md</h4>
               </div>
               <p>
-                A Codex-focused playbook with repo navigation, contract checklist, TTL rules, deterministic RNG
-                patterns, and frontend wiring notes.
+                A Codex-focused playbook with repo navigation, contract
+                checklist, TTL rules, deterministic RNG patterns, and frontend
+                wiring notes.
               </p>
-              <div className="ai-ready-footer">Built for precise, step-by-step automation.</div>
+              <div className="ai-ready-footer">
+                Built for precise, step-by-step automation.
+              </div>
             </div>
             <div className="ai-ready-card">
               <div className="ai-ready-card-header">
@@ -131,16 +150,20 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 <h4>CLAUDE.md</h4>
               </div>
               <p>
-                The same authoritative guidance tuned for Claude, keeping game logic, bindings, and studio
-                integration aligned with repo standards.
+                The same authoritative guidance tuned for Claude, keeping game
+                logic, bindings, and studio integration aligned with repo
+                standards.
               </p>
-              <div className="ai-ready-footer">Reduces missed steps during assisted builds.</div>
+              <div className="ai-ready-footer">
+                Reduces missed steps during assisted builds.
+              </div>
             </div>
             <div className="ai-ready-card ai-ready-benefits">
               <h4>Why it helps game devs</h4>
               <p>
-                Faster onboarding, fewer integration mistakes, and a consistent Game Hub lifecycle so teams can
-                focus on gameplay instead of plumbing.
+                Faster onboarding, fewer integration mistakes, and a consistent
+                Game Hub lifecycle so teams can focus on gameplay instead of
+                plumbing.
               </p>
               <div className="ai-ready-benefit-row">
                 <span>Speed</span>
@@ -160,7 +183,10 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <div className="commands-grid">
           <div className="command-card">
             <h4>All-in-one setup</h4>
-            <p>Build contracts, deploy to testnet, generate bindings, and start the studio.</p>
+            <p>
+              Build contracts, deploy to testnet, generate bindings, and start
+              the studio.
+            </p>
             <code>bun run setup</code>
           </div>
           <div className="command-card">
@@ -170,7 +196,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
           <div className="command-card">
             <h4>Deploy + IDs</h4>
-            <p>Deploy contracts to testnet (all or one) and write contract IDs.</p>
+            <p>
+              Deploy contracts to testnet (all or one) and write contract IDs.
+            </p>
             <code>bun run deploy my-game</code>
           </div>
           <div className="command-card">
@@ -190,7 +218,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
         </div>
       </section>
-
     </div>
-  );
+  )
 }

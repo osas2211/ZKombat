@@ -1,91 +1,91 @@
-import { useState } from 'react';
-import { TwentyOneGame } from '../games/twenty-one/TwentyOneGame';
-import { NumberGuessGame } from '../games/number-guess/NumberGuessGame';
-import { DiceDuelGame } from '../games/dice-duel/DiceDuelGame';
-import { useWallet } from '@/hooks/useWallet';
-import typezeroHero from '../assets/typezero-hero.png';
-import xrayHero from '../assets/xray-hero.png';
-import './GamesCatalog.css';
+import { useState } from "react"
+import { TwentyOneGame } from "../../games/twenty-one/TwentyOneGame"
+import { NumberGuessGame } from "../../games/number-guess/NumberGuessGame"
+import { DiceDuelGame } from "../../games/dice-duel/DiceDuelGame"
+import { useWallet } from "@/hooks/useWallet"
+import typezeroHero from "../../assets/typezero-hero.png"
+import xrayHero from "../../assets/xray-hero.png"
+import "./GamesCatalog.css"
 
 const games = [
   {
-    id: 'twenty-one',
-    title: 'Twenty-One',
-    emoji: '🃏',
-    description: 'Card strategy duel where close-to-21 wins without busting.',
-    tags: ['2 players', 'Card strategy'],
+    id: "twenty-one",
+    title: "Twenty-One",
+    emoji: "🃏",
+    description: "Card strategy duel where close-to-21 wins without busting.",
+    tags: ["2 players", "Card strategy"],
   },
   {
-    id: 'number-guess',
-    title: 'Number Guess',
-    emoji: '🎯',
-    description: 'Pick a number, lock it in, and reveal the closest guess.',
-    tags: ['2 players', 'Fast rounds'],
+    id: "number-guess",
+    title: "Number Guess",
+    emoji: "🎯",
+    description: "Pick a number, lock it in, and reveal the closest guess.",
+    tags: ["2 players", "Fast rounds"],
   },
   {
-    id: 'dice-duel',
-    title: 'Dice Duel',
-    emoji: '🎲',
-    description: 'Roll two dice each and race for the highest total.',
-    tags: ['2 players', 'Quick launch'],
+    id: "dice-duel",
+    title: "Dice Duel",
+    emoji: "🎲",
+    description: "Roll two dice each and race for the highest total.",
+    tags: ["2 players", "Quick launch"],
   },
-];
+]
 
 interface GamesCatalogProps {
-  onBack?: () => void;
+  onBack?: () => void
 }
 
 export function GamesCatalog({ onBack }: GamesCatalogProps) {
-  const [selectedGame, setSelectedGame] = useState<string | null>(null);
-  const { publicKey, isConnected, isConnecting, error } = useWallet();
+  const [selectedGame, setSelectedGame] = useState<string | null>(null)
+  const { publicKey, isConnected, isConnecting, error } = useWallet()
 
-  const userAddress = publicKey ?? '';
+  const userAddress = publicKey ?? ""
 
   const handleSelectGame = (gameId: string) => {
-    setSelectedGame(gameId);
-  };
+    setSelectedGame(gameId)
+  }
 
   const handleBackToLibrary = () => {
-    setSelectedGame(null);
-  };
+    setSelectedGame(null)
+  }
 
-  if (selectedGame === 'twenty-one') {
+  if (selectedGame === "twenty-one") {
     return (
       <TwentyOneGame
         userAddress={userAddress}
         currentEpoch={1}
         availablePoints={1000000000n}
         onBack={handleBackToLibrary}
-        onStandingsRefresh={() => console.log('Refresh standings')}
-        onGameComplete={() => console.log('Game complete')}
+        onStandingsRefresh={() => console.log("Refresh standings")}
+        onGameComplete={() => console.log("Game complete")}
       />
-    );
+    )
   }
 
-  if (selectedGame === 'number-guess') {
+  if (selectedGame === "number-guess") {
     return (
       <NumberGuessGame
         userAddress={userAddress}
         currentEpoch={1}
         availablePoints={1000000000n}
         onBack={handleBackToLibrary}
-        onStandingsRefresh={() => console.log('Refresh standings')}
-        onGameComplete={() => console.log('Game complete')}
+        onStandingsRefresh={() => console.log("Refresh standings")}
+        onGameComplete={() => console.log("Game complete")}
       />
-    );
+    )
   }
 
-  if (selectedGame === 'dice-duel') {
+  if (selectedGame === "dice-duel") {
     return (
       <DiceDuelGame
         userAddress={userAddress}
         currentEpoch={1}
         availablePoints={1000000000n}
         onBack={handleBackToLibrary}
-        onStandingsRefresh={() => console.log('Refresh standings')}
-        onGameComplete={() => console.log('Game complete')}
+        onStandingsRefresh={() => console.log("Refresh standings")}
+        onGameComplete={() => console.log("Game complete")}
       />
-    );
+    )
   }
 
   return (
@@ -111,8 +111,11 @@ export function GamesCatalog({ onBack }: GamesCatalogProps) {
             </>
           ) : (
             <>
-              <h3>{isConnecting ? 'Connecting...' : 'Connect a Dev Wallet'}</h3>
-              <p>Use the switcher above to auto-connect and swap between demo players.</p>
+              <h3>{isConnecting ? "Connecting..." : "Connect a Dev Wallet"}</h3>
+              <p>
+                Use the switcher above to auto-connect and swap between demo
+                players.
+              </p>
             </>
           )}
         </div>
@@ -154,7 +157,8 @@ export function GamesCatalog({ onBack }: GamesCatalogProps) {
             <div className="zk-card-text">
               <div className="zk-card-title">TypeZero</div>
               <p className="zk-card-description">
-                A typing game built with RISC Zero and Stellar. Requires local setup.
+                A typing game built with RISC Zero and Stellar. Requires local
+                setup.
               </p>
               <div className="zk-card-links">
                 <a
@@ -219,5 +223,5 @@ export function GamesCatalog({ onBack }: GamesCatalogProps) {
         </div>
       </section>
     </div>
-  );
+  )
 }
