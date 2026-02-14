@@ -6,6 +6,7 @@ import { ZKOMBAT_CONTRACT } from '@/utils/constants';
 import { getFundedSimulationSourceAddress } from '@/utils/simulationUtils';
 import { devWalletService, DevWalletService } from '@/services/devWalletService';
 import type { Game } from './bindings';
+import type { UseWebRTCReturn } from '@/webrtc/useWebRTC';
 
 const createRandomSessionId = (): number => {
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
@@ -32,6 +33,8 @@ interface ZkombatGameProps {
   initialSessionId?: number | null;
   onStandingsRefresh: () => void;
   onGameComplete: () => void;
+  /** WebRTC connection — available once the match lobby connects both players */
+  webrtc?: UseWebRTCReturn;
 }
 
 export function ZkombatGame({

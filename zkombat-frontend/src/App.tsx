@@ -1,6 +1,7 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { config } from './config';
 import { Layout } from './components/Layout';
+import { MatchLobby } from './components/MatchLobby';
 import { useWallet } from './hooks/useWallet';
 import { ZkombatGame } from './games/zkombat/ZkombatGame';
 
@@ -60,13 +61,18 @@ function HomePage() {
   }
 
   return (
-    <ZkombatGame
-      userAddress={userAddress}
-      currentEpoch={1}
-      availablePoints={1000000000n}
-      onStandingsRefresh={() => {}}
-      onGameComplete={() => {}}
-    />
+    <MatchLobby>
+      {(webrtc) => (
+        <ZkombatGame
+          userAddress={userAddress}
+          currentEpoch={1}
+          availablePoints={1000000000n}
+          onStandingsRefresh={() => {}}
+          onGameComplete={() => {}}
+          webrtc={webrtc}
+        />
+      )}
+    </MatchLobby>
   );
 }
 
