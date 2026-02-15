@@ -13,6 +13,7 @@ bindings/
 # Environment
 .env
 .env.local
+.env*
 
 # Dependencies
 node_modules/
