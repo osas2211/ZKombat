@@ -1,0 +1,54 @@
+.neon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 2rem;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #000 !important;
+  border: none !important;
+  border-bottom: 2px solid var(--neon-color, #00fff0) !important;
+  border-radius: 0;
+  cursor: pointer;
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* ── Neon ON ── */
+.neon-btn.neon-on {
+  box-shadow:
+    0 2px 8px var(--neon-color, #00fff0),
+    0 4px 24px color-mix(in srgb, var(--neon-color, #00fff0) 50%, transparent),
+    0 6px 60px color-mix(in srgb, var(--neon-color, #00fff0) 30%, transparent);
+}
+
+/* ── Neon OFF ── */
+.neon-btn:not(.neon-on) {
+  border-bottom-color: #333 !important;
+  box-shadow: none;
+}
+
+/* ── Hover ── */
+.neon-btn.neon-on:hover {
+  box-shadow:
+    0 2px 12px var(--neon-color, #00fff0),
+    0 4px 40px color-mix(in srgb, var(--neon-color, #00fff0) 60%, transparent),
+    0 6px 80px color-mix(in srgb, var(--neon-color, #00fff0) 40%, transparent);
+}
+
+.neon-btn:not(.neon-on):hover {
+  border-bottom-color: #555 !important;
+}
+
+/* ── Disabled ── */
+.neon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}

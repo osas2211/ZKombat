@@ -69,9 +69,9 @@ export function AppLoader({ children }: { children: ReactNode }) {
 
       tl.to(".divider", {
         scaleY: "100%",
-        duration: 1,
+        duration: 0.15,
         onComplete: () => {
-          gsap.to(".divider", { opacity: 0, duration: 0.3, delay: 0.3 })
+          gsap.to(".divider", { opacity: 0, duration: 0.1, delay: 0.1 })
         },
       })
 
@@ -167,7 +167,7 @@ export function AppLoader({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        <div className="divider" />
+        <div className="divider !bg-transparent" />
 
         <div className="spinner-container">
           <div className="spinner" />

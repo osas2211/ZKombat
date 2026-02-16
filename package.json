@@ -17,6 +17,8 @@
     "@types/bun": "latest"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^14.5.0"
+    "@gsap/react": "^2.1.2",
+    "@stellar/stellar-sdk": "^14.5.0",
+    "gsap": "^3.14.2"
   }
 }
