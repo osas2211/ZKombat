@@ -28,7 +28,7 @@
   font-weight: inherit;
   line-height: inherit;
   letter-spacing: -0.02em;
-  /* color: #201919; */
+  /* color: #070f11; */
 }
 
 .select-game-page h2 {
@@ -52,4 +52,84 @@
 
 .select-game-page .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ── Hero parallax headroom ── */
+.select-game-page .hero-img_ {
+  height: 120%;
+  top: -10%;
+}
+
+/* ── Section heading mask ── */
+.select-game-page .section-heading {
+  overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+}
+
+.select-game-page .section-heading-text {
+  display: inline-block;
+  will-change: transform;
+}
+
+/* ── Neon heading accent line ── */
+.select-game-page .section-heading-line {
+  height: 1px;
+  margin-top: 0.5rem;
+  background: linear-gradient(90deg, #00fff0, transparent 80%);
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
+}
+
+/* ── Game card 3D tilt ── */
+.select-game-page .game-card {
+  position: relative;
+  will-change: transform;
+  transform-style: preserve-3d;
+  overflow: hidden;
+  border-radius: 3px;
+  transition: box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.select-game-page .game-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    300px circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    rgba(0, 255, 240, 0.12),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.select-game-page .game-card:hover::after {
+  opacity: 1;
+}
+
+.select-game-page .game-card:hover {
+  box-shadow:
+    0 0 0 1px rgba(0, 255, 240, 0.15),
+    0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Clip-path reveal targets ── */
+.select-game-page .game-card-img,
+.select-game-page .collectable-card-img,
+.select-game-page .news-img {
+  will-change: clip-path;
+}
+
+/* ── Activity items ── */
+.select-game-page .activity-item {
+  will-change: transform, opacity;
+}
+
+.select-game-page .activity-avatar {
+  will-change: transform;
 }

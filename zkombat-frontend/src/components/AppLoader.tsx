@@ -1,15 +1,38 @@
 "use client"
 
-import { ReactNode, useEffect, useRef } from "react"
+import { ReactNode, useCallback, useEffect, useRef } from "react"
 import { useGSAP } from "@gsap/react"
+import { useLocation } from "react-router-dom"
 import gsap from "gsap"
 import CustomEase from "gsap/dist/CustomEase"
+import { NeonButton } from "./NeonButton"
 import "./webloader.css"
 
 export function AppLoader({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const timelineRef = useRef<gsap.core.Timeline | null>(null)
+  const isSelectGame = pathname === "/select-game"
+
+  const handleEnter = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.play()
+    }
+    if (timelineRef.current) {
+      gsap.to(".enter-btn", { opacity: 0, duration: 0.3 })
+      timelineRef.current.resume()
+    }
+  }, [])
+
   useEffect(() => {
     gsap.registerPlugin(CustomEase)
     CustomEase.create("hop", "0.9, 0, 0.1, 1")
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+      }
+    }
   }, [])
   const scope = useRef(null)
 
@@ -24,6 +47,7 @@ export function AppLoader({ children }: { children: ReactNode }) {
           ease: "hop",
         },
       })
+      timelineRef.current = tl
 
       const counts = document.querySelectorAll(".count")
 
@@ -74,6 +98,15 @@ export function AppLoader({ children }: { children: ReactNode }) {
           gsap.to(".divider", { opacity: 0, duration: 0.1, delay: 0.1 })
         },
       })
+
+      // Show enter button and pause for user interaction on select-game
+      if (isSelectGame) {
+        tl.to(".enter-btn", {
+          opacity: 1,
+          duration: 0.6,
+        })
+        tl.addPause()
+      }
 
       tl.to("#word-1 h1", {
         y: "100%",
@@ -216,6 +249,24 @@ export function AppLoader({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
+
+      {isSelectGame && (
+        <div
+          className="enter-btn fixed inset-0 z-[999] flex items-end justify-center pb-[20%] pointer-events-none"
+          style={{ opacity: 0 }}
+        >
+          <NeonButton
+            onClick={handleEnter}
+            className="px-10 py-3 text-lg tracking-widest cursor-pointer! pointer-events-auto"
+          >
+            ENTER
+          </NeonButton>
+        </div>
+      )}
+
+      <audio loop ref={audioRef} preload="auto">
+        <source src="/music/arabic-chant.mp3" type="audio/mp3" />
+      </audio>
 
       <div className="relative">{children}</div>
     </div>

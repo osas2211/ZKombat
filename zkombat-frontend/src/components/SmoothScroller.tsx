@@ -7,29 +7,28 @@ import { ScrollTrigger } from "gsap/ScrollTrigger"
 gsap.registerPlugin(ScrollTrigger)
 
 export const SmoothScroller = ({ children }: { children: React.ReactNode }) => {
-  // gsap.registerPlugin(ScrollTrigger)
   const container = useRef(null)
 
-  // useGSAP(() => {}, { scope: container })
   useEffect(() => {
-    // Initialize Lenis
     const lenis = new Lenis({
-      duration: 1.5, // Smooth scroll duration
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Custom easing
-      //  direction: "vertical", // Scroll direction
-      //  smooth: true, // Enable smooth scrolling
+      duration: 1.5,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     })
 
-    // Animation frame for Lenis updates
-    const animate = (time: any) => {
-      lenis.raf(time)
-      requestAnimationFrame(animate)
+    // Bridge Lenis scroll events to GSAP ScrollTrigger
+    lenis.on("scroll", ScrollTrigger.update)
+
+    // Use GSAP ticker for synchronized RAF (GSAP gives seconds, Lenis wants ms)
+    const rafCallback = (time: number) => {
+      lenis.raf(time * 1000)
     }
+    gsap.ticker.add(rafCallback)
+    gsap.ticker.lagSmoothing(0)
 
-    requestAnimationFrame(animate)
-
-    // Cleanup Lenis instance on unmount
-    return () => lenis.destroy()
+    return () => {
+      gsap.ticker.remove(rafCallback)
+      lenis.destroy()
+    }
   }, [])
 
   return (

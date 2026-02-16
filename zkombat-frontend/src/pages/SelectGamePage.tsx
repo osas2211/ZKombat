@@ -1,6 +1,20 @@
-import { Bell, Settings, ChevronRight, MessageCircle } from "lucide-react"
+import { useRef, useState, useEffect } from "react"
+import {
+  Bell,
+  Settings,
+  ChevronRight,
+  MessageCircle,
+  Wallet,
+} from "lucide-react"
+import { useGSAP } from "@gsap/react"
+import gsap from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import moment from "moment"
 import { NeonButton } from "../components/NeonButton"
+import { useWalletStandalone } from "../hooks/useWalletStandalone"
 import "./SelectGamePage.css"
+
+gsap.registerPlugin(ScrollTrigger)
 
 const IMG = "/images/cover-img.jpg"
 
@@ -17,24 +31,60 @@ function PSLogo() {
    TOP BAR
    ═══════════════════════════════════════════════════════ */
 function TopBar() {
+  const [time, setTime] = useState(() => moment().format("h:mm a"))
+  const { publicKey, isConnected, isConnecting, network, connect, disconnect } =
+    useWalletStandalone()
+
+  useEffect(() => {
+    const id = setInterval(() => setTime(moment().format("h:mm a")), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const address = typeof publicKey === "string" ? publicKey : ""
+  const shortAddress = address
+    ? `${address.slice(0, 4)}...${address.slice(-4)}`
+    : ""
+
   return (
     <div className="reveal-block absolute top-0 right-0 left-0 z-20 flex items-center justify-between px-5 py-3.5 md:px-10">
-      {/* Left — PS logo + profile avatar */}
+      {/* Left — Logo */}
       <div className="flex items-center gap-3">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600">
           <PSLogo />
         </div>
-        <div className="h-7 w-7 overflow-hidden rounded-full">
-          <img src={IMG} alt="avatar" className="h-full w-full object-cover" />
-        </div>
       </div>
 
-      {/* Right — status text, time, icons */}
+      {/* Right — wallet, time, icons */}
       <div className="flex items-center gap-4">
-        <span className="hidden text-[10px] font-medium tracking-wider text-white/50 uppercase md:block">
-          Game base, ENG
-        </span>
-        <span className="text-[13px] font-medium text-white/70">1:06pm</span>
+        {/* Wallet */}
+        {isConnected ? (
+          <div className="flex items-center gap-2">
+            {network && (
+              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-medium text-white/50 uppercase">
+                {network}
+              </span>
+            )}
+            <button
+              onClick={disconnect}
+              className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-medium text-white/70 transition-colors hover:bg-white/20"
+            >
+              <Wallet className="h-3 w-3" />
+              {shortAddress}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => connect().catch(() => undefined)}
+            disabled={isConnecting}
+            className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-medium text-white/70 transition-colors hover:bg-white/20 disabled:opacity-40"
+          >
+            <Wallet className="h-3 w-3" />
+            {isConnecting ? "Connecting..." : "Connect Wallet"}
+          </button>
+        )}
+
+        <span className="text-[13px] font-medium text-white/70">{time}</span>
+
         <div className="flex items-center gap-2.5">
           <button className="flex items-center justify-center">
             <MessageCircle className="h-4 w-4 text-white/50" />
@@ -52,16 +102,59 @@ function TopBar() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   HERO — Featured game banner
+   HERO — Featured game banner + parallax
    ═══════════════════════════════════════════════════════ */
 function HeroSection() {
+  const heroRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      const hero = heroRef.current
+      if (!hero) return
+
+      const img = hero.querySelector(".hero-img_") as HTMLElement
+      const content = hero.querySelector(".hero-content") as HTMLElement
+
+      if (img) {
+        gsap.to(img, {
+          yPercent: 20,
+          ease: "none",
+          scrollTrigger: {
+            trigger: hero,
+            start: "top top",
+            end: "bottom top",
+            scrub: true,
+          },
+        })
+      }
+
+      if (content) {
+        gsap.to(content, {
+          yPercent: -30,
+          opacity: 0,
+          ease: "none",
+          scrollTrigger: {
+            trigger: hero,
+            start: "top top",
+            end: "80% top",
+            scrub: true,
+          },
+        })
+      }
+    },
+    { scope: heroRef },
+  )
+
   return (
-    <div className="relative h-[54vh] w-full overflow-hidden md:h-[58vh]">
+    <div
+      ref={heroRef}
+      className="relative h-[54vh] w-full overflow-hidden md:h-[58vh]"
+    >
       {/* Background image */}
       <img
         src={IMG}
-        alt="The Last of Us Part II"
-        className="hero-img_ absolute inset-0 h-full w-full object-cover"
+        alt="ZKombat"
+        className="hero-img_ absolute inset-0 w-full object-cover will-change-transform"
       />
 
       {/* Dark gradient overlays for readability */}
@@ -70,7 +163,7 @@ function HeroSection() {
       <div className="absolute right-0 bottom-0 left-0 h-32 bg-linear-to-t from-[#0b0b0e] to-transparent" />
 
       {/* Hero content */}
-      <div className="reveal-block absolute right-0 bottom-10 left-0 z-10 px-5 md:bottom-[13rem] md:px-10 md:pl-[100px]">
+      <div className="hero-content reveal-block absolute right-0 bottom-10 left-0 z-10 px-5 will-change-transform md:bottom-[13rem] md:px-10 md:pl-[100px]">
         <div className="flex items-end justify-between gap-4">
           {/* Title block */}
           <div className="flex items-end gap-4">
@@ -111,6 +204,8 @@ function HeroSection() {
    ACTIVITY — Left column
    ═══════════════════════════════════════════════════════ */
 function ActivitySection() {
+  const sectionRef = useRef<HTMLDivElement>(null)
+
   const items = [
     {
       color: "#4ade80",
@@ -132,23 +227,94 @@ function ActivitySection() {
     },
   ]
 
+  useGSAP(
+    () => {
+      const el = sectionRef.current
+      if (!el) return
+
+      const trigger = {
+        trigger: el,
+        start: "top 85%",
+        toggleActions: "play none none none" as const,
+      }
+
+      // Heading text reveal
+      gsap.fromTo(
+        el.querySelector(".section-heading-text"),
+        { yPercent: 110 },
+        {
+          yPercent: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: trigger,
+        },
+      )
+
+      // Neon line
+      gsap.to(el.querySelector(".section-heading-line"), {
+        scaleX: 1,
+        duration: 1.2,
+        ease: "power4.out",
+        scrollTrigger: trigger,
+      })
+
+      // Activity items slide from left
+      gsap.fromTo(
+        el.querySelectorAll(".activity-item"),
+        { x: -40, opacity: 0 },
+        {
+          x: 0,
+          opacity: 1,
+          duration: 0.7,
+          stagger: 0.15,
+          ease: "power3.out",
+          scrollTrigger: trigger,
+        },
+      )
+
+      // Avatar pop
+      gsap.fromTo(
+        el.querySelectorAll(".activity-avatar"),
+        { scale: 0, rotation: -45 },
+        {
+          scale: 1,
+          rotation: 0,
+          duration: 0.5,
+          stagger: 0.15,
+          ease: "back.out(2)",
+          scrollTrigger: trigger,
+        },
+      )
+    },
+    { scope: sectionRef },
+  )
+
   return (
-    <div className="reveal-block shrink-0 md:w-64 lg:w-112 p-4 md:p-7 bg-[#070f11]/70 backdrop-blur-[8px] rounded-md">
+    <div
+      ref={sectionRef}
+      className="reveal-block shrink-0 md:w-64 lg:w-112 min-h-[430px] p-4 md:p-7 bg-[#262322]/55 backdrop-blur-[8px] rounded-md"
+    >
       {/* Section header */}
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-[13px] font-semibold text-white">Activity</h2>
+        <h2 className="section-heading text-[13px] font-semibold text-white">
+          <span className="section-heading-text">Activity</span>
+        </h2>
         <button className="text-[11px] text-white/40 hover:text-white/70">
           {/* All activity */}
         </button>
       </div>
+      {/* <div className="section-heading-line" /> */}
 
       {/* Feed items */}
-      <div className="flex flex-col gap-2">
+      <div className="mt-3 flex flex-col gap-2">
         {items.map((item, i) => (
-          <div key={i} className="flex items-start gap-2.5 rounded-lg  p-2.5">
+          <div
+            key={i}
+            className="activity-item flex items-start gap-2.5 rounded-lg p-2.5"
+          >
             {/* Colored avatar circle */}
             <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+              className="activity-avatar flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
               style={{ backgroundColor: item.color }}
             >
               <span className="text-[10px] font-bold text-white">
@@ -172,37 +338,149 @@ function ActivitySection() {
    YOUR GAMES — Center column
    ═══════════════════════════════════════════════════════ */
 function GamesSection() {
+  const sectionRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      const el = sectionRef.current
+      if (!el) return
+
+      const trigger = {
+        trigger: el,
+        start: "top 85%",
+        toggleActions: "play none none none" as const,
+      }
+
+      // Heading text reveal
+      gsap.fromTo(
+        el.querySelector(".section-heading-text"),
+        { yPercent: 110 },
+        {
+          yPercent: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: trigger,
+        },
+      )
+
+      // Neon line
+      gsap.to(el.querySelector(".section-heading-line"), {
+        scaleX: 1,
+        duration: 1.2,
+        ease: "power4.out",
+        scrollTrigger: trigger,
+      })
+
+      // Cards stagger
+      gsap.fromTo(
+        el.querySelectorAll(".game-card"),
+        { y: 40, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.8,
+          stagger: 0.15,
+          ease: "power3.out",
+          scrollTrigger: trigger,
+        },
+      )
+
+      // Image clip-path reveal (left to right)
+      gsap.fromTo(
+        el.querySelectorAll(".game-card-img"),
+        { clipPath: "inset(0 100% 0 0)" },
+        {
+          clipPath: "inset(0 0% 0 0)",
+          duration: 1.2,
+          stagger: 0.2,
+          ease: "power4.inOut",
+          scrollTrigger: trigger,
+        },
+      )
+
+      // 3D tilt hover on cards
+      const cards = el.querySelectorAll(".game-card")
+      cards.forEach((card) => {
+        const cardEl = card as HTMLElement
+
+        const handleMouseMove = (e: MouseEvent) => {
+          const rect = cardEl.getBoundingClientRect()
+          const x = e.clientX - rect.left
+          const y = e.clientY - rect.top
+          const centerX = rect.width / 2
+          const centerY = rect.height / 2
+
+          const rotateX = ((y - centerY) / centerY) * -8
+          const rotateY = ((x - centerX) / centerX) * 8
+
+          gsap.to(cardEl, {
+            rotateX,
+            rotateY,
+            scale: 1.03,
+            duration: 0.4,
+            ease: "power2.out",
+            transformPerspective: 800,
+            transformOrigin: "center center",
+          })
+
+          cardEl.style.setProperty("--glow-x", `${(x / rect.width) * 100}%`)
+          cardEl.style.setProperty("--glow-y", `${(y / rect.height) * 100}%`)
+        }
+
+        const handleMouseLeave = () => {
+          gsap.to(cardEl, {
+            rotateX: 0,
+            rotateY: 0,
+            scale: 1,
+            duration: 0.6,
+            ease: "power3.out",
+          })
+        }
+
+        cardEl.addEventListener("mousemove", handleMouseMove)
+        cardEl.addEventListener("mouseleave", handleMouseLeave)
+      })
+    },
+    { scope: sectionRef },
+  )
+
   return (
-    <div className="reveal-block shrink-0 md:w-64 lg:w-200 p-4 md:p-9 bg-[#070f11]/40 backdrop-blur-[8px] rounded-md">
+    <div
+      ref={sectionRef}
+      className="reveal-block shrink-0 md:w-64 lg:w-200 p-4 md:p-9 bg-[#262322]/40 backdrop-blur-[8px] rounded-md"
+    >
       {/* Section header */}
       <div className="mb-3 flex items-baseline justify-between">
-        <p className="!text-[20px] !font-[300] text-white">Games catelog</p>
+        <p className="section-heading !text-[20px] !font-[300] text-white">
+          <span className="section-heading-text">Games catelog</span>
+        </p>
         <button className="text-[11px] text-white/40 hover:text-white/70">
           {/* All activity */}
         </button>
       </div>
+      {/* <div className="section-heading-line" /> */}
 
-      <div className="grid grid-cols-3 gap-4">
-        <div>
+      <div className="mt-3 grid grid-cols-3 gap-4">
+        <div className="game-card">
           <img
-            className="w-full h-[280px] rounded-[3px]"
+            className="game-card-img w-full h-[280px] rounded-[3px]"
             src="/images/zkombat-cover.png"
           />
-          <p className="text-green-500 !text-sm">Available</p>
+          <p className="text-green-500 !text-sm mt-2">Available</p>
         </div>
-        <div>
+        <div className="game-card">
           <img
-            className="w-full h-[280px] rounded-[3px]"
+            className="game-card-img w-full h-[280px] rounded-[3px]"
             src="/images/game-2.png"
           />
-          <p className="text-gray-500 !text-sm">Coming soon</p>
+          <p className="text-gray-500 !text-sm mt-2">Coming soon</p>
         </div>
-        <div>
+        <div className="game-card">
           <img
-            className="w-full h-[280px] rounded-[3px]"
+            className="game-card-img w-full h-[280px] rounded-[3px]"
             src="/images/game-3.png"
           />
-          <p className="text-gray-500 !text-sm">Coming soon</p>
+          <p className="text-gray-500 !text-sm mt-2">Coming soon</p>
         </div>
       </div>
     </div>
@@ -210,37 +488,92 @@ function GamesSection() {
 }
 
 function Collectables() {
+  const sectionRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      const el = sectionRef.current
+      if (!el) return
+
+      const trigger = {
+        trigger: el,
+        start: "top 85%",
+        toggleActions: "play none none none" as const,
+      }
+
+      // Heading text reveal
+      gsap.fromTo(
+        el.querySelector(".section-heading-text"),
+        { yPercent: 110 },
+        {
+          yPercent: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: trigger,
+        },
+      )
+
+      // Neon line
+      gsap.to(el.querySelector(".section-heading-line"), {
+        scaleX: 1,
+        duration: 1.2,
+        ease: "power4.out",
+        scrollTrigger: trigger,
+      })
+
+      // Image clip-path reveal (bottom to top)
+      gsap.fromTo(
+        el.querySelectorAll(".collectable-card-img"),
+        { clipPath: "inset(100% 0 0 0)" },
+        {
+          clipPath: "inset(0% 0 0 0)",
+          duration: 1.4,
+          stagger: 0.18,
+          ease: "power4.inOut",
+          scrollTrigger: trigger,
+        },
+      )
+    },
+    { scope: sectionRef },
+  )
+
   return (
-    <div className="reveal-block w-full p-4 md:p-12 bg-[#070f11] backdrop-blur-[8px] rounded-md">
+    <div
+      ref={sectionRef}
+      className="collectables-section reveal-block w-full p-4 md:p-12 bg-[#262322]/50 backdrop-blur-[8px] rounded-md"
+    >
       {/* Section header */}
       <div className="mb-3 flex items-baseline justify-between">
-        <p className="!text-[20px] !font-[300] text-white">Collectables</p>
+        <p className="section-heading !text-[20px] !font-[300] text-white">
+          <span className="section-heading-text">Collectables</span>
+        </p>
         <button className="text-[11px] text-white/40 hover:text-white/70">
           {/* All activity */}
         </button>
       </div>
+      {/* <div className="section-heading-line" /> */}
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="mt-3 grid grid-cols-3 gap-4">
         <div>
           <img
-            className="w-full h-[300px] rounded-[3px]"
+            className="collectable-card-img w-full h-[300px] rounded-[3px]"
             src="/images/collectables/collectible-1.jpg"
           />
-          <p className="text-gray-500 !text-sm">Coming soon</p>
+          <p className="text-gray-500 !text-sm mt-2">Coming soon</p>
         </div>
         <div>
           <img
-            className="w-full h-[300px] rounded-[3px]"
+            className="collectable-card-img w-full h-[300px] rounded-[3px]"
             src="/images/collectables/nft3.webp"
           />
-          <p className="text-gray-500 !text-sm">Coming soon</p>
+          <p className="text-gray-500 !text-sm mt-2">Coming soon</p>
         </div>
         <div>
           <img
-            className="w-full h-[300px] rounded-[3px]"
+            className="collectable-card-img w-full h-[300px] rounded-[3px]"
             src="/images/collectables/nft2.webp"
           />
-          <p className="text-gray-500 !text-sm">Coming soon</p>
+          <p className="text-gray-500 !text-sm mt-2">Coming soon</p>
         </div>
       </div>
     </div>
@@ -248,19 +581,73 @@ function Collectables() {
 }
 
 function LatestNews() {
+  const sectionRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      const el = sectionRef.current
+      if (!el) return
+
+      const trigger = {
+        trigger: el,
+        start: "top 85%",
+        toggleActions: "play none none none" as const,
+      }
+
+      // Heading text reveal
+      gsap.fromTo(
+        el.querySelector(".section-heading-text"),
+        { yPercent: 110 },
+        {
+          yPercent: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: trigger,
+        },
+      )
+
+      // Neon line
+      gsap.to(el.querySelector(".section-heading-line"), {
+        scaleX: 1,
+        duration: 1.2,
+        ease: "power4.out",
+        scrollTrigger: trigger,
+      })
+
+      // Image clip-path reveal (center outward)
+      gsap.fromTo(
+        el.querySelector(".news-img"),
+        { clipPath: "inset(0 50% 0 50%)" },
+        {
+          clipPath: "inset(0 0% 0 0%)",
+          duration: 1.4,
+          ease: "power4.inOut",
+          scrollTrigger: trigger,
+        },
+      )
+    },
+    { scope: sectionRef },
+  )
+
   return (
-    <div className="reveal-block w-full p-4 md:p-12 bg-[#070f11] backdrop-blur-[8px] rounded-md">
+    <div
+      ref={sectionRef}
+      className="news-section reveal-block w-full p-4 md:p-12 bg-[#262322]/50 backdrop-blur-[8px] rounded-md"
+    >
       {/* Section header */}
       <div className="mb-3 flex items-baseline justify-between">
-        <p className="!text-[20px] !font-[300] text-white">Latest News</p>
+        <p className="section-heading !text-[20px] !font-[300] text-white">
+          <span className="section-heading-text">Latest News</span>
+        </p>
         <button className="text-[11px] text-white/40 hover:text-white/70">
           {/* All activity */}
         </button>
       </div>
+      {/* <div className="section-heading-line" /> */}
 
-      <div>
+      <div className="mt-3">
         <img
-          className="w-full h-[300px] rounded-[3px] object-fill"
+          className="news-img w-full h-[300px] rounded-[3px] object-fill"
           src="/images/stellar-hackathon.jpg"
         />
       </div>
@@ -269,15 +656,57 @@ function LatestNews() {
 }
 
 function Store() {
+  const sectionRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      const el = sectionRef.current
+      if (!el) return
+
+      const trigger = {
+        trigger: el,
+        start: "top 85%",
+        toggleActions: "play none none none" as const,
+      }
+
+      // Heading text reveal
+      gsap.fromTo(
+        el.querySelector(".section-heading-text"),
+        { yPercent: 110 },
+        {
+          yPercent: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: trigger,
+        },
+      )
+
+      // Neon line
+      gsap.to(el.querySelector(".section-heading-line"), {
+        scaleX: 1,
+        duration: 1.2,
+        ease: "power4.out",
+        scrollTrigger: trigger,
+      })
+    },
+    { scope: sectionRef },
+  )
+
   return (
-    <div className="reveal-block shrink-0 md:w-64 lg:w-200 p-4 md:p-9 bg-[#070f11]/40 backdrop-blur-[8px] rounded-md">
+    <div
+      ref={sectionRef}
+      className="reveal-block shrink-0 md:w-64 lg:w-200 p-4 md:p-9 bg-[#262322]/40 backdrop-blur-[8px] rounded-md"
+    >
       {/* Section header */}
       <div className="mb-3 flex items-baseline justify-between">
-        <p className="!text-[20px] !font-[300] text-white">Store</p>
+        <p className="section-heading !text-[20px] !font-[300] text-white">
+          <span className="section-heading-text">Store</span>
+        </p>
         <button className="text-[11px] text-white/40 hover:text-white/70">
           {/* All activity */}
         </button>
       </div>
+      {/* <div className="section-heading-line" /> */}
 
       {/* Coming Soon Banner */}
       <div className="mt-4 flex flex-col items-center">
