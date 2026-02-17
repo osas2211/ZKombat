@@ -98,6 +98,13 @@ export class RTCManager {
     }
   }
 
+  /** Send arbitrary JSON over the data channel (for character selection, etc.) */
+  sendRaw(data: object) {
+    if (this.dc?.readyState === 'open') {
+      this.dc.send(JSON.stringify(data));
+    }
+  }
+
   close() {
     this.stopPing();
     this.dc?.close();
@@ -303,6 +310,11 @@ export class RTCManager {
         this.pushBuffer(this.remoteBuffer, msg);
         this.logInput({ player: 'remote', input: msg });
         this.cb.onGameData?.(msg);
+        break;
+
+      case 'character-select':
+      case 'character-confirmed':
+        this.cb.onRawMessage?.(msg);
         break;
     }
   }

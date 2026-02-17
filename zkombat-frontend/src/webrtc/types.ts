@@ -22,7 +22,26 @@ export interface PongMessage {
   timestamp: number;
 }
 
-export type DataChannelMessage = GameInput | PingMessage | PongMessage;
+// ── Character selection messages ─────────────────────────────────────
+
+export interface CharacterSelectMessage {
+  type: 'character-select';
+  characterId: string;
+  characterName: string;
+}
+
+export interface CharacterConfirmedMessage {
+  type: 'character-confirmed';
+  characterId: string;
+  characterName: string;
+}
+
+export type DataChannelMessage =
+  | GameInput
+  | PingMessage
+  | PongMessage
+  | CharacterSelectMessage
+  | CharacterConfirmedMessage;
 
 // ── Input log (append-only, fed to Noir ZK circuit at match end) ─────
 
@@ -105,6 +124,7 @@ export interface RTCManagerCallbacks {
   onConnected: () => void;
   onDisconnected: () => void;
   onGameData: (data: GameInput) => void;
+  onRawMessage: (data: DataChannelMessage) => void;
   onLatencyUpdate: (ms: number) => void;
   onError: (message: string) => void;
   onInputLog: (entry: InputLogEntry) => void;

@@ -1,0 +1,409 @@
+/* ═══════════════════════════════════════════════════════
+   PLAY PAGE — Dark-themed fighting-game lobby
+   ═══════════════════════════════════════════════════════ */
+
+.play-page,
+.play-page *,
+.play-page *::before,
+.play-page *::after {
+  box-sizing: border-box;
+}
+
+.play-page button {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-page h1,
+.play-page h2,
+.play-page h3 {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: normal;
+  margin: 0;
+}
+
+.play-page p,
+.play-page span,
+.play-page label {
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  text-transform: none;
+  margin: 0;
+}
+
+/* ── Atmospheric bg ── */
+.play-page-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(900px circle at 50% 30%, rgba(0, 160, 255, 0.05), transparent 60%),
+    radial-gradient(700px circle at 30% 70%, rgba(130, 80, 255, 0.04), transparent 50%),
+    radial-gradient(700px circle at 70% 70%, rgba(255, 50, 100, 0.03), transparent 50%);
+}
+
+/* ── Input ── */
+.play-page input[type="text"] {
+  font-family: "IBM Plex Mono", "Fira Code", "Inter", monospace;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: white;
+  padding: 0.8rem 1rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.play-page input[type="text"]:focus {
+  border-color: rgba(0, 200, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(0, 200, 255, 0.1);
+}
+
+.play-page input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+/* ── Lobby card ── */
+.play-lobby {
+  width: 100%;
+  max-width: 440px;
+  padding: 2.5rem 2rem;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle glow line at top */
+.play-lobby::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.4), transparent);
+}
+
+.play-lobby-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.play-lobby-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.play-lobby-sub {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 0.4rem;
+}
+
+/* ── Neon button style for lobby ── */
+.play-btn-primary {
+  width: 100%;
+  padding: 0.85rem 2rem !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: #fff !important;
+  background: rgba(0, 200, 255, 0.08) !important;
+  border: 1px solid rgba(0, 200, 255, 0.3) !important;
+  border-radius: 8px !important;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+  box-shadow: 0 0 20px rgba(0, 200, 255, 0.08);
+}
+
+.play-btn-primary:hover {
+  background: rgba(0, 200, 255, 0.15) !important;
+  border-color: rgba(0, 200, 255, 0.5) !important;
+  box-shadow: 0 0 30px rgba(0, 200, 255, 0.15) !important;
+}
+
+.play-btn-secondary {
+  padding: 0.8rem 2rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  transition: background 0.2s, color 0.2s !important;
+}
+
+.play-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.play-btn-join {
+  padding: 0.8rem 1.5rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px !important;
+  transition: background 0.2s, border-color 0.2s !important;
+  flex-shrink: 0;
+}
+
+.play-btn-join:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.play-btn-join:disabled {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+}
+
+/* ── Divider ── */
+.play-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.play-divider-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.play-divider-text {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 600;
+}
+
+/* ── Join row ── */
+.play-join-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+/* ── Error ── */
+.play-error {
+  padding: 0.65rem 1rem;
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 60, 60, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 100, 100, 0.9);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+/* ═══════════════════════════════════════════
+   WAITING STATE
+   ═══════════════════════════════════════════ */
+
+.play-waiting {
+  text-align: center;
+}
+
+.play-waiting-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  background: rgba(0, 200, 255, 0.08);
+  border: 1px solid rgba(0, 200, 255, 0.2);
+  border-radius: 20px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(0, 200, 255, 0.7);
+  margin-bottom: 1.5rem;
+}
+
+.play-waiting-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.06em;
+}
+
+.play-waiting-code {
+  font-family: "IBM Plex Mono", "Fira Code", monospace;
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 0.35em;
+  color: #fff;
+  margin: 0.6rem 0;
+  text-shadow: 0 0 30px rgba(0, 200, 255, 0.25);
+}
+
+.play-copy-btn {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  gap: 0.35rem;
+  transition: color 0.2s !important;
+  padding: 0.25rem 0 !important;
+}
+
+.play-copy-btn:hover {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.play-waiting-status {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 1.5rem;
+}
+
+/* Dots animation */
+@keyframes pp-dot-pulse {
+  0%, 80%, 100% { opacity: 0.15; }
+  40% { opacity: 1; }
+}
+
+.play-dots span {
+  animation: pp-dot-pulse 1.4s ease-in-out infinite;
+}
+
+.play-dots span:nth-child(2) { animation-delay: 0.2s; }
+.play-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ═══════════════════════════════════════════
+   CONNECTING STATE
+   ═══════════════════════════════════════════ */
+
+.play-connecting {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.play-spinner {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(0, 200, 255, 0.15);
+  border-top-color: rgba(0, 200, 255, 0.7);
+  border-radius: 50%;
+  animation: pp-spin 0.7s linear infinite;
+  margin-bottom: 1.25rem;
+}
+
+@keyframes pp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.play-connecting-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.35rem;
+}
+
+.play-connecting-sub {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ═══════════════════════════════════════════
+   READY STATE
+   ═══════════════════════════════════════════ */
+
+.play-ready {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.play-ready-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #00c8ff, #a855f7, #ff3264);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: pp-gradient 2s ease infinite;
+}
+
+@keyframes pp-gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.play-ready-matchup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  margin-top: 2rem;
+}
+
+.play-ready-fighter {
+  text-align: center;
+}
+
+.play-ready-fighter img {
+  width: 100px;
+  height: 100px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.play-ready-fighter-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 0.6rem;
+}
+
+.play-ready-fighter-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 0.15rem;
+}
+
+.play-ready-vs {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.1);
+  letter-spacing: 0.08em;
+}
+
+.play-ready-hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.25);
+  margin-top: 2rem;
+}

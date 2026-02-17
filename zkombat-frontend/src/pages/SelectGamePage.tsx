@@ -1,111 +1,23 @@
-import { useRef, useState, useEffect } from "react"
-import {
-  Bell,
-  Settings,
-  ChevronRight,
-  MessageCircle,
-  Wallet,
-} from "lucide-react"
+import { useRef } from "react"
+import { ChevronRight, Lock } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { useGSAP } from "@gsap/react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
-import moment from "moment"
 import { NeonButton } from "../components/NeonButton"
-import { useWalletStandalone } from "../hooks/useWalletStandalone"
+import { TopBar } from "../components/TopBar"
 import "./SelectGamePage.css"
 
 gsap.registerPlugin(ScrollTrigger)
 
 const IMG = "/images/cover-img.jpg"
 
-/* ──  logo SVG ── */
-function PSLogo() {
-  return (
-    <svg viewBox="0 0 24 24" fill="white" className="h-5 w-5">
-      <path d="M9.5 2.5v16.3l3.7 1.2V4.2c0-.7.3-1 .8-.8.6.2.8.7.8 1.4v6c2 .9 3.7.1 3.7-2.4 0-2.6-1.2-3.9-4.5-5-1.7-.5-3.2-.9-4.5-1V2.5zM6 14.3c-2.2-.6-4.1-.2-4.8 1.1-.8 1.3-.2 3 1.8 4 1.3.7 2.7 1 4 1.1v-3l-2.2-.7c-.6-.2-.7-.6-.3-.8.4-.2 1.2-.1 2.5.3v-2zm12.2 1.5c-1-.4-2.1-.5-3.2-.3v2.8l1.6.5c.6.2.7.6.3.8-.4.2-1.2.1-1.9-.2v3c1.8.5 3.3.2 4.2-.5.9-.8 1-2.4-.1-3.5-.4-.4-.6-.7-.9-1z" />
-    </svg>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════
-   TOP BAR
-   ═══════════════════════════════════════════════════════ */
-function TopBar() {
-  const [time, setTime] = useState(() => moment().format("h:mm a"))
-  const { publicKey, isConnected, isConnecting, network, connect, disconnect } =
-    useWalletStandalone()
-
-  useEffect(() => {
-    const id = setInterval(() => setTime(moment().format("h:mm a")), 30_000)
-    return () => clearInterval(id)
-  }, [])
-
-  const address = typeof publicKey === "string" ? publicKey : ""
-  const shortAddress = address
-    ? `${address.slice(0, 4)}...${address.slice(-4)}`
-    : ""
-
-  return (
-    <div className="reveal-block absolute top-0 right-0 left-0 z-20 flex items-center justify-between px-5 py-3.5 md:px-10">
-      {/* Left — Logo */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600">
-          <PSLogo />
-        </div>
-      </div>
-
-      {/* Right — wallet, time, icons */}
-      <div className="flex items-center gap-4">
-        {/* Wallet */}
-        {isConnected ? (
-          <div className="flex items-center gap-2">
-            {network && (
-              <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-medium text-white/50 uppercase">
-                {network}
-              </span>
-            )}
-            <button
-              onClick={disconnect}
-              className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-medium text-white/70 transition-colors hover:bg-white/20"
-            >
-              <Wallet className="h-3 w-3" />
-              {shortAddress}
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => connect().catch(() => undefined)}
-            disabled={isConnecting}
-            className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-medium text-white/70 transition-colors hover:bg-white/20 disabled:opacity-40"
-          >
-            <Wallet className="h-3 w-3" />
-            {isConnecting ? "Connecting..." : "Connect Wallet"}
-          </button>
-        )}
-
-        <span className="text-[13px] font-medium text-white/70">{time}</span>
-
-        <div className="flex items-center gap-2.5">
-          <button className="flex items-center justify-center">
-            <MessageCircle className="h-4 w-4 text-white/50" />
-          </button>
-          <button className="flex items-center justify-center">
-            <Bell className="h-4 w-4 text-white/50" />
-          </button>
-          <button className="flex items-center justify-center">
-            <Settings className="h-4 w-4 text-white/50" />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /* ═══════════════════════════════════════════════════════
    HERO — Featured game banner + parallax
    ═══════════════════════════════════════════════════════ */
 function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
 
   useGSAP(
     () => {
@@ -164,7 +76,7 @@ function HeroSection() {
 
       {/* Hero content */}
       <div className="hero-content reveal-block absolute right-0 bottom-10 left-0 z-10 px-5 will-change-transform md:bottom-[13rem] md:px-10 md:pl-[100px]">
-        <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           {/* Title block */}
           <div className="flex items-end gap-4">
             <div>
@@ -175,16 +87,23 @@ function HeroSection() {
             </div>
             <div>
               <p className="mb-1 text-[10px] font-medium tracking-wider text-white/50 uppercase md:text-[11px]">
-                Now Avaliable
+                Now Available
               </p>
               <h1 className="text-[26px] !leading-[1.1] !font-[300] text-white md:!text-[64px] lg:!text-[72px]">
                 ZKombat I - Stellar
               </h1>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="online-pulse-dot" />
+                <span className="text-[11px] text-[#00fff0]/70">12 players online</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <NeonButton className="shrink-0 gap-2 h-[45px] w-[150px] !text-white bg-[#000]!">
+          <div className="flex flex-wrap items-center gap-4">
+            <NeonButton
+              onClick={() => navigate("/play")}
+              className="shrink-0 gap-2 h-[45px] w-[150px] !text-white bg-[#000]!"
+            >
               Play now
             </NeonButton>
             <NeonButton
@@ -201,30 +120,17 @@ function HeroSection() {
 }
 
 /* ═══════════════════════════════════════════════════════
-   ACTIVITY — Left column
+   LEADERBOARD — Left column
    ═══════════════════════════════════════════════════════ */
-function ActivitySection() {
+function LeaderboardSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
 
-  const items = [
-    {
-      color: "#4ade80",
-      initial: "J",
-      name: "JimmyMurphy12",
-      text: "just scored playing season on Fifa 21",
-    },
-    {
-      color: "#60a5fa",
-      initial: "N",
-      name: "NathanBOTCR1S16",
-      text: "just added you as a friend on The Last of Us Part II",
-    },
-    {
-      color: "#f472b6",
-      initial: "M",
-      name: "MyGirl_gaming",
-      text: "just started playing Watch Dogs: Legion",
-    },
+  const players = [
+    { rank: 1, name: "xShadowKing", wins: 142, losses: 31, color: "#facc15" },
+    { rank: 2, name: "NathanBOTCR1S16", wins: 128, losses: 40, color: "#a1a1aa" },
+    { rank: 3, name: "MyGirl_gaming", wins: 115, losses: 44, color: "#cd7c32" },
+    { rank: 4, name: "JimmyMurphy12", wins: 98, losses: 52, color: "#3b82f6" },
+    { rank: 5, name: "0xPhr4ck", wins: 87, losses: 61, color: "#3b82f6" },
   ]
 
   useGSAP(
@@ -258,15 +164,15 @@ function ActivitySection() {
         scrollTrigger: trigger,
       })
 
-      // Activity items slide from left
+      // Leaderboard rows slide from left
       gsap.fromTo(
-        el.querySelectorAll(".activity-item"),
+        el.querySelectorAll(".lb-row"),
         { x: -40, opacity: 0 },
         {
           x: 0,
           opacity: 1,
           duration: 0.7,
-          stagger: 0.15,
+          stagger: 0.1,
           ease: "power3.out",
           scrollTrigger: trigger,
         },
@@ -274,13 +180,13 @@ function ActivitySection() {
 
       // Avatar pop
       gsap.fromTo(
-        el.querySelectorAll(".activity-avatar"),
+        el.querySelectorAll(".lb-avatar"),
         { scale: 0, rotation: -45 },
         {
           scale: 1,
           rotation: 0,
           duration: 0.5,
-          stagger: 0.15,
+          stagger: 0.1,
           ease: "back.out(2)",
           scrollTrigger: trigger,
         },
@@ -295,40 +201,76 @@ function ActivitySection() {
       className="reveal-block shrink-0 md:w-64 lg:w-112 min-h-[430px] p-4 md:p-7 bg-[#262322]/55 backdrop-blur-[8px] rounded-md"
     >
       {/* Section header */}
-      <div className="mb-3 flex items-baseline justify-between">
+      <div className="mb-4 flex items-baseline justify-between">
         <h2 className="section-heading text-[13px] font-semibold text-white">
-          <span className="section-heading-text">Activity</span>
+          <span className="section-heading-text">Leaderboard</span>
         </h2>
-        <button className="text-[11px] text-white/40 hover:text-white/70">
-          {/* All activity */}
-        </button>
+        <span className="text-[10px] text-white/30 uppercase tracking-wider">Season 1</span>
       </div>
-      {/* <div className="section-heading-line" /> */}
 
-      {/* Feed items */}
-      <div className="mt-3 flex flex-col gap-2">
-        {items.map((item, i) => (
-          <div
-            key={i}
-            className="activity-item flex items-start gap-2.5 rounded-lg p-2.5"
-          >
-            {/* Colored avatar circle */}
+      {/* Column labels */}
+      <div className="mb-2 flex items-center gap-2.5 px-2.5 text-[9px] font-medium tracking-wider text-white/25 uppercase">
+        <span className="w-5 text-center">#</span>
+        <span className="w-8" />
+        <span className="flex-1">Player</span>
+        <span className="w-10 text-right">W</span>
+        <span className="w-10 text-right">L</span>
+        <span className="w-14 text-right">Win %</span>
+      </div>
+
+      {/* Rows */}
+      <div className="flex flex-col gap-1">
+        {players.map((p) => {
+          const winRate = Math.round((p.wins / (p.wins + p.losses)) * 100)
+          const isTop3 = p.rank <= 3
+          return (
             <div
-              className="activity-avatar flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
-              style={{ backgroundColor: item.color }}
+              key={p.rank}
+              className={`lb-row flex items-center gap-2.5 rounded-lg px-2.5 py-2 ${isTop3 ? "lb-row--top" : ""}`}
             >
-              <span className="text-[10px] font-bold text-white">
-                {item.initial}
+              {/* Rank */}
+              <span
+                className={`w-5 text-center text-[11px] font-bold ${isTop3 ? "" : "text-white/30"}`}
+                style={isTop3 ? { color: p.color } : undefined}
+              >
+                {p.rank}
               </span>
-            </div>
 
-            {/* Text */}
-            <p className="min-w-0 flex-1 text-[10px] leading-[1.45] text-white/50 md:text-[11px]">
-              <span className="font-semibold text-white/80">{item.name}</span>{" "}
-              {item.text}
-            </p>
-          </div>
-        ))}
+              {/* Avatar */}
+              <div
+                className="lb-avatar flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                style={{ backgroundColor: p.color }}
+              >
+                <span className="text-[9px] font-bold text-white">
+                  {p.name[0]}
+                </span>
+              </div>
+
+              {/* Name */}
+              <span className="flex-1 min-w-0 truncate text-[11px] font-medium text-white/80">
+                {p.name}
+              </span>
+
+              {/* Wins */}
+              <span className="w-10 text-right text-[11px] text-green-400/80">
+                {p.wins}
+              </span>
+
+              {/* Losses */}
+              <span className="w-10 text-right text-[11px] text-red-400/60">
+                {p.losses}
+              </span>
+
+              {/* Win rate bar */}
+              <div className="w-14 flex items-center justify-end gap-1.5">
+                <div className="lb-bar-track">
+                  <div className="lb-bar-fill" style={{ width: `${winRate}%` }} />
+                </div>
+                <span className="text-[10px] text-white/40">{winRate}%</span>
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -339,6 +281,7 @@ function ActivitySection() {
    ═══════════════════════════════════════════════════════ */
 function GamesSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
 
   useGSAP(
     () => {
@@ -398,8 +341,8 @@ function GamesSection() {
         },
       )
 
-      // 3D tilt hover on cards
-      const cards = el.querySelectorAll(".game-card")
+      // 3D tilt hover on cards (skip locked cards)
+      const cards = el.querySelectorAll(".game-card:not(.game-card--locked)")
       cards.forEach((card) => {
         const cardEl = card as HTMLElement
 
@@ -452,7 +395,7 @@ function GamesSection() {
       {/* Section header */}
       <div className="mb-3 flex items-baseline justify-between">
         <p className="section-heading !text-[20px] !font-[300] text-white">
-          <span className="section-heading-text">Games catelog</span>
+          <span className="section-heading-text">Games Catalog</span>
         </p>
         <button className="text-[11px] text-white/40 hover:text-white/70">
           {/* All activity */}
@@ -461,25 +404,41 @@ function GamesSection() {
       {/* <div className="section-heading-line" /> */}
 
       <div className="mt-3 grid grid-cols-3 gap-4">
-        <div className="game-card">
+        {/* Available card */}
+        <div
+          className="game-card game-card--available"
+          onClick={() => navigate("/play")}
+        >
           <img
             className="game-card-img w-full h-[280px] rounded-[3px]"
             src="/images/zkombat-cover.png"
           />
+          <div className="game-card-overlay">
+            <p className="text-[13px] font-semibold text-white">ZKombat</p>
+            <p className="text-[11px] text-white/60 mt-0.5">PvP fighting on Stellar</p>
+          </div>
           <p className="text-green-500 !text-sm mt-2">Available</p>
         </div>
-        <div className="game-card">
+
+        {/* Coming Soon cards */}
+        <div className="game-card game-card--locked">
           <img
             className="game-card-img w-full h-[280px] rounded-[3px]"
             src="/images/game-2.png"
           />
+          <div className="game-card-lock-badge">
+            <span><Lock className="h-5 w-5 text-white/50" /></span>
+          </div>
           <p className="text-gray-500 !text-sm mt-2">Coming soon</p>
         </div>
-        <div className="game-card">
+        <div className="game-card game-card--locked">
           <img
             className="game-card-img w-full h-[280px] rounded-[3px]"
             src="/images/game-3.png"
           />
+          <div className="game-card-lock-badge">
+            <span><Lock className="h-5 w-5 text-white/50" /></span>
+          </div>
           <p className="text-gray-500 !text-sm mt-2">Coming soon</p>
         </div>
       </div>
@@ -540,7 +499,7 @@ function Collectables() {
   return (
     <div
       ref={sectionRef}
-      className="collectables-section reveal-block w-full p-4 md:p-12 bg-[#262322]/50 backdrop-blur-[8px] rounded-md"
+      className="collectables-section reveal-block w-full h-full p-4 md:p-12 bg-[#262322]/50 backdrop-blur-[8px] rounded-md"
     >
       {/* Section header */}
       <div className="mb-3 flex items-baseline justify-between">
@@ -632,7 +591,7 @@ function LatestNews() {
   return (
     <div
       ref={sectionRef}
-      className="news-section reveal-block w-full p-4 md:p-12 bg-[#262322]/50 backdrop-blur-[8px] rounded-md"
+      className="news-section reveal-block w-full h-full flex flex-col p-4 md:p-12 bg-[#262322]/50 backdrop-blur-[8px] rounded-md"
     >
       {/* Section header */}
       <div className="mb-3 flex items-baseline justify-between">
@@ -645,9 +604,9 @@ function LatestNews() {
       </div>
       {/* <div className="section-heading-line" /> */}
 
-      <div className="mt-3">
+      <div className="mt-3 flex-1">
         <img
-          className="news-img w-full h-[300px] rounded-[3px] object-fill"
+          className="news-img w-full h-full min-h-[300px] rounded-[3px] object-cover"
           src="/images/stellar-hackathon.jpg"
         />
       </div>
@@ -745,14 +704,14 @@ export const SelectGamePage = () => {
       <HeroSection />
 
       {/* Content below hero */}
-      <div className="relative z-10 px-5 pb-10 md:px-10 md:pl-[100px] -mt-[10rem]">
+      <div className="content-overlap relative z-10 px-5 pb-10 md:px-10 md:pl-[100px]">
         {/* Activity + Your games + Store */}
         <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-start md:gap-6">
-          <ActivitySection />
+          <LeaderboardSection />
           <GamesSection />
           <Store />
         </div>
-        <div className="grid gap-6 grid-cols-2">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 lg:items-start">
           <Collectables />
           <LatestNews />
         </div>

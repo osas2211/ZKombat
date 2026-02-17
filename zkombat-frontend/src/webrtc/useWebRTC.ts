@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RTCManager } from './RTCManager';
-import type { ConnectionState, GameInput, InputLogEntry } from './types';
+import type { ConnectionState, DataChannelMessage, GameInput, InputLogEntry } from './types';
 
 export interface UseWebRTCReturn {
   /** Current connection lifecycle state */
@@ -9,12 +9,18 @@ export interface UseWebRTCReturn {
   remoteGameData: GameInput | null;
   /** Send a game input to the remote peer */
   sendGameData: (data: GameInput) => void;
+  /** Send arbitrary JSON data over the data channel */
+  sendRaw: (data: object) => void;
+  /** Latest raw message received from the remote peer (character-select, etc.) */
+  rawMessage: DataChannelMessage | null;
   /** Create a new match room (you become the host) */
   createRoom: () => void;
   /** Join an existing room by ID */
   joinRoom: (roomId: string) => void;
   /** The current room ID (null until created/joined) */
   roomId: string | null;
+  /** Whether this peer is the room host */
+  isHost: boolean;
   /** Append-only input log for both players — feed to the Noir ZK circuit */
   inputHistory: React.RefObject<InputLogEntry[]>;
   /** Latest measured round-trip latency in ms */
@@ -28,7 +34,9 @@ export interface UseWebRTCReturn {
 export function useWebRTC(signalingUrl: string): UseWebRTCReturn {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [remoteGameData, setRemoteGameData] = useState<GameInput | null>(null);
+  const [rawMessage, setRawMessage] = useState<DataChannelMessage | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState(false);
   const [latency, setLatency] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +52,7 @@ export function useWebRTC(signalingUrl: string): UseWebRTCReturn {
     manager.on('onConnected', () => setError(null));
     manager.on('onDisconnected', () => {});
     manager.on('onGameData', (data) => setRemoteGameData(data));
+    manager.on('onRawMessage', (data) => setRawMessage(data));
     manager.on('onLatencyUpdate', (ms) => setLatency(ms));
     manager.on('onError', (msg) => setError(msg));
     manager.on('onInputLog', (entry) => {
@@ -60,11 +69,13 @@ export function useWebRTC(signalingUrl: string): UseWebRTCReturn {
 
   const createRoom = useCallback(() => {
     setError(null);
+    setIsHost(true);
     managerRef.current?.createRoom();
   }, []);
 
   const joinRoom = useCallback((id: string) => {
     setError(null);
+    setIsHost(false);
     managerRef.current?.joinRoom(id);
   }, []);
 
@@ -72,9 +83,14 @@ export function useWebRTC(signalingUrl: string): UseWebRTCReturn {
     managerRef.current?.sendGameData(data);
   }, []);
 
+  const sendRaw = useCallback((data: object) => {
+    managerRef.current?.sendRaw(data);
+  }, []);
+
   const disconnect = useCallback(() => {
     managerRef.current?.close();
     setRoomId(null);
+    setIsHost(false);
     setError(null);
   }, []);
 
@@ -82,9 +98,12 @@ export function useWebRTC(signalingUrl: string): UseWebRTCReturn {
     connectionState,
     remoteGameData,
     sendGameData,
+    sendRaw,
+    rawMessage,
     createRoom,
     joinRoom,
     roomId,
+    isHost,
     inputHistory,
     latency,
     error,

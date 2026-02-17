@@ -125,11 +125,125 @@
   will-change: clip-path;
 }
 
-/* ── Activity items ── */
-.select-game-page .activity-item {
-  will-change: transform, opacity;
-}
-
 .select-game-page .activity-avatar {
   will-change: transform;
 }
+
+/* ── Content overlap (replaces fragile -mt-[10rem]) ── */
+.select-game-page .content-overlap {
+  margin-top: clamp(-10rem, -12vh, -6rem);
+}
+
+/* ── Online pulse dot ── */
+.select-game-page .online-pulse-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00fff0;
+  animation: online-pulse 2s ease-in-out infinite;
+}
+
+@keyframes online-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+/* ── Game card — Available variant ── */
+.select-game-page .game-card--available {
+  box-shadow: 0 0 0 1px rgba(0, 255, 240, 0.25),
+              0 0 20px rgba(0, 255, 240, 0.08);
+}
+
+.select-game-page .game-card--available:hover {
+  box-shadow: 0 0 0 1px rgba(0, 255, 240, 0.4),
+              0 0 30px rgba(0, 255, 240, 0.15),
+              0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Game card — Locked / Coming Soon variant ── */
+.select-game-page .game-card--locked {
+  pointer-events: none;
+  cursor: default;
+}
+
+.select-game-page .game-card--locked::after {
+  display: none;
+}
+
+/* ── Game card lock badge ── */
+.select-game-page .game-card-lock-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.select-game-page .game-card-lock-badge span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── Game card hover overlay ── */
+.select-game-page .game-card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.select-game-page .game-card--available:hover .game-card-overlay {
+  opacity: 1;
+}
+
+/* ── Leaderboard rows ── */
+.select-game-page .lb-row {
+  will-change: transform, opacity;
+  transition: background-color 0.2s ease;
+}
+
+.select-game-page .lb-row:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.select-game-page .lb-row--top {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.select-game-page .lb-avatar {
+  will-change: transform;
+}
+
+/* ── Leaderboard win-rate bar ── */
+.select-game-page .lb-bar-track {
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.select-game-page .lb-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: #00fff0;
+  opacity: 0.6;
+}
+

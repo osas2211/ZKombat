@@ -5,6 +5,7 @@ import { MatchLobby } from "./components/MatchLobby"
 import { useWallet } from "./hooks/useWallet"
 import { ZkombatGame } from "./games/zkombat/ZkombatGame"
 import { SelectGamePage } from "./pages/SelectGamePage"
+import { PlayPage } from "./pages/PlayPage"
 import { AppWrapper } from "./components/AppWrapper"
 
 const GAME_ID = "zkombat"
@@ -99,6 +100,7 @@ export default function App() {
       </Route>
       <Route element={<AppWrapper />}>
         <Route element={<SelectGamePage />} path="select-game" />
+        <Route element={<PlayPage />} path="play" />
       </Route>
     </Routes>
   )
