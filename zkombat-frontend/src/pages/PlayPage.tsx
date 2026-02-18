@@ -5,6 +5,7 @@ import { TopBar } from "../components/TopBar"
 import { CharacterSelect } from "../components/CharacterSelect"
 import type { Character } from "../components/CharacterSelect"
 import { useWebRTC } from "../webrtc/useWebRTC"
+import { FightingGame } from "../game/FightingGame"
 import "./PlayPage.css"
 
 const SIGNALING_URL =
@@ -16,6 +17,7 @@ type PlayPhase =
   | "connecting"
   | "character-select"
   | "ready"
+  | "fighting"
 
 export function PlayPage() {
   const navigate = useNavigate()
@@ -52,7 +54,7 @@ export function PlayPage() {
         setPhase("character-select")
         break
       case "disconnected":
-        if (phase !== "ready") setPhase("lobby")
+        if (phase !== "ready" && phase !== "fighting") setPhase("lobby")
         break
     }
   }, [connectionState])
@@ -85,6 +87,14 @@ export function PlayPage() {
     setPhase("lobby")
     setJoinInput("")
   }
+
+  /* ── Auto-transition: ready → fighting ── */
+  useEffect(() => {
+    if (phase === "ready") {
+      const id = setTimeout(() => setPhase("fighting"), 3000)
+      return () => clearTimeout(id)
+    }
+  }, [phase])
 
   const playerSide = isHost ? "left" : "right"
 
@@ -229,6 +239,17 @@ export function PlayPage() {
           </div>
         )}
       </div>
+
+      {/* ── FIGHTING ── */}
+      {phase === "fighting" && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-black">
+          <FightingGame
+            isHost={isHost}
+            sendRaw={sendRaw}
+            rawMessage={rawMessage}
+          />
+        </div>
+      )}
 
       {/* Character selection overlay */}
       <CharacterSelect

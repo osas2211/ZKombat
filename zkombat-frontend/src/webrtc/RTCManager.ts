@@ -316,6 +316,10 @@ export class RTCManager {
       case 'character-confirmed':
         this.cb.onRawMessage?.(msg);
         break;
+
+      default:
+        this.cb.onRawMessage?.(msg);
+        break;
     }
   }
 
