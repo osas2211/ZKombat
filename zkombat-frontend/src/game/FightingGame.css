@@ -33,10 +33,17 @@
   pointer-events: none;
 }
 
+/* ── Bar groups ── */
+.fg-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 /* ── Health bars ── */
 .fg-health {
   position: relative;
-  flex: 1;
   height: 30px;
 }
 
@@ -71,6 +78,44 @@
 }
 
 .fg-health--p2 .fg-health-fill {
+  left: 0;
+}
+
+/* ── Stamina bars ── */
+.fg-stamina {
+  position: relative;
+  height: 10px;
+}
+
+.fg-stamina--p1 {
+  border-left: 4px solid white;
+  border-bottom: 4px solid white;
+}
+
+.fg-stamina--p2 {
+  border-right: 4px solid white;
+  border-bottom: 4px solid white;
+}
+
+.fg-stamina-bg {
+  position: absolute;
+  inset: 0;
+  background: #1e293b;
+}
+
+.fg-stamina-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: #facc15;
+  transition: width 0.3s ease;
+}
+
+.fg-stamina--p1 .fg-stamina-fill {
+  right: 0;
+}
+
+.fg-stamina--p2 .fg-stamina-fill {
   left: 0;
 }
 

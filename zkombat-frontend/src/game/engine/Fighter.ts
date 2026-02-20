@@ -6,6 +6,15 @@ import type { FighterOpts, SpriteData, SpriteName } from './types'
 // FIGHTER CLASS
 // ═══════════════════════════════════════════════════════
 
+// Game constants (must match Noir circuit)
+export const STARTING_HEALTH = 100
+export const STARTING_STAMINA = 100
+export const PUNCH_DAMAGE = 20
+export const BLOCKED_DAMAGE = 10
+export const PUNCH_STAMINA_COST = 15
+export const BLOCK_STAMINA_COST = 5
+export const STAMINA_REGEN = 3
+
 export class Fighter extends GameSprite {
   velocity: { x: number; y: number }
   lastKey: string | null = null
@@ -16,7 +25,9 @@ export class Fighter extends GameSprite {
     height: number
   }
   isAttacking = false
-  health = 100
+  isBlocking = false
+  health = STARTING_HEALTH
+  stamina = STARTING_STAMINA
   sprites: Record<SpriteName, SpriteData>
   dead = false
 
@@ -57,16 +68,39 @@ export class Fighter extends GameSprite {
   }
 
   attack() {
+    if (this.isBlocking) return // can't attack while blocking
+    if (this.stamina < PUNCH_STAMINA_COST) return // not enough stamina
+    this.stamina -= PUNCH_STAMINA_COST
     this.switchSprite('attack1')
     this.isAttacking = true
   }
 
+  startBlock() {
+    if (this.isAttacking) return
+    this.isBlocking = true
+  }
+
+  stopBlock() {
+    this.isBlocking = false
+  }
+
   takeHit() {
-    this.health -= 20
+    const dmg = this.isBlocking ? BLOCKED_DAMAGE : PUNCH_DAMAGE
+    if (this.isBlocking && this.stamina >= BLOCK_STAMINA_COST) {
+      this.stamina -= BLOCK_STAMINA_COST
+    }
+    this.health -= dmg
     if (this.health <= 0) {
+      this.health = 0
       this.switchSprite('death')
     } else {
       this.switchSprite('takeHit')
+    }
+  }
+
+  regenStamina() {
+    if (this.stamina < STARTING_STAMINA) {
+      this.stamina = Math.min(this.stamina + STAMINA_REGEN, STARTING_STAMINA)
     }
   }
 

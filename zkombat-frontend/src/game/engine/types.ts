@@ -42,6 +42,8 @@ export interface LocalInput {
   lastKey: 'left' | 'right' | null
   jumpC: number
   atkC: number
+  blocking: boolean
+  blockC: number
 }
 
 export interface RemoteInput {
@@ -50,6 +52,9 @@ export interface RemoteInput {
   atkC: number
   seenJ: number
   seenA: number
+  blocking: boolean
+  blockC: number
+  seenB: number
 }
 
 export type GameResult = 'player1' | 'player2' | 'tie'

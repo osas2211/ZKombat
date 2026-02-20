@@ -1,5 +1,6 @@
 import type { DataChannelMessage } from '../webrtc/types'
 import type { GameResult } from './engine/types'
+import type { InputRecorder } from '../zk/InputRecorder'
 import { useGameLoop } from './engine/useGameLoop'
 import './FightingGame.css'
 
@@ -7,24 +8,37 @@ interface FightingGameProps {
   isHost: boolean
   sendRaw: (data: object) => void
   rawMessage: DataChannelMessage | null
-  onGameEnd?: (result: GameResult) => void
+  onGameEnd?: (result: GameResult, p1Health: number, p2Health: number) => void
+  inputRecorder?: InputRecorder | null
 }
 
-export function FightingGame({ isHost, sendRaw, rawMessage, onGameEnd }: FightingGameProps) {
-  const { canvasRef, hud } = useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd })
+export function FightingGame({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder }: FightingGameProps) {
+  const { canvasRef, hud } = useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder })
 
   return (
     <div className="fighting-game">
       {/* HUD */}
       <div className="fg-hud">
-        <div className="fg-health fg-health--p1">
-          <div className="fg-health-bg" />
-          <div className="fg-health-fill" style={{ width: `${hud.p1Health}%` }} />
+        <div className="fg-bars fg-bars--p1">
+          <div className="fg-health fg-health--p1">
+            <div className="fg-health-bg" />
+            <div className="fg-health-fill" style={{ width: `${hud.p1Health}%` }} />
+          </div>
+          <div className="fg-stamina fg-stamina--p1">
+            <div className="fg-stamina-bg" />
+            <div className="fg-stamina-fill" style={{ width: `${hud.p1Stamina}%` }} />
+          </div>
         </div>
         <div className="fg-timer">{hud.timer}</div>
-        <div className="fg-health fg-health--p2">
-          <div className="fg-health-bg" />
-          <div className="fg-health-fill" style={{ width: `${hud.p2Health}%` }} />
+        <div className="fg-bars fg-bars--p2">
+          <div className="fg-health fg-health--p2">
+            <div className="fg-health-bg" />
+            <div className="fg-health-fill" style={{ width: `${hud.p2Health}%` }} />
+          </div>
+          <div className="fg-stamina fg-stamina--p2">
+            <div className="fg-stamina-bg" />
+            <div className="fg-stamina-fill" style={{ width: `${hud.p2Stamina}%` }} />
+          </div>
         </div>
       </div>
 
