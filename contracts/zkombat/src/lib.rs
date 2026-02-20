@@ -98,8 +98,8 @@ pub struct GameMatch {
     pub player2_points: i128,
     pub status: MatchStatus,
     pub created_ledger: u32,
-    pub p1_proof: Option<ProofSubmission>,
-    pub p2_proof: Option<ProofSubmission>,
+    pub p1_proof_submitted: bool,
+    pub p2_proof_submitted: bool,
     pub winner: Option<Address>,
 }
 
@@ -143,6 +143,8 @@ pub struct PointConfig {
 #[derive(Clone)]
 pub enum DataKey {
     Match(u32),
+    P1Proof(u32),
+    P2Proof(u32),
     PlayerStats(Address),
     Leaderboard,
     GameHubAddress,
@@ -251,8 +253,8 @@ impl ZkombatContract {
             player2_points,
             status: MatchStatus::Active,
             created_ledger: env.ledger().sequence(),
-            p1_proof: None,
-            p2_proof: None,
+            p1_proof_submitted: false,
+            p2_proof_submitted: false,
             winner: None,
         };
 
@@ -315,21 +317,31 @@ impl ZkombatContract {
         };
 
         if player == game.player1 {
-            if game.p1_proof.is_some() {
+            if game.p1_proof_submitted {
                 return Err(Error::ProofAlreadySubmitted);
             }
-            game.p1_proof = Some(submission);
+            game.p1_proof_submitted = true;
+            let proof_key = DataKey::P1Proof(session_id);
+            env.storage().temporary().set(&proof_key, &submission);
+            env.storage()
+                .temporary()
+                .extend_ttl(&proof_key, MATCH_TTL_LEDGERS, MATCH_TTL_LEDGERS);
         } else if player == game.player2 {
-            if game.p2_proof.is_some() {
+            if game.p2_proof_submitted {
                 return Err(Error::ProofAlreadySubmitted);
             }
-            game.p2_proof = Some(submission);
+            game.p2_proof_submitted = true;
+            let proof_key = DataKey::P2Proof(session_id);
+            env.storage().temporary().set(&proof_key, &submission);
+            env.storage()
+                .temporary()
+                .extend_ttl(&proof_key, MATCH_TTL_LEDGERS, MATCH_TTL_LEDGERS);
         } else {
             return Err(Error::NotPlayer);
         }
 
         // If both proofs are in, resolve the match
-        if game.p1_proof.is_some() && game.p2_proof.is_some() {
+        if game.p1_proof_submitted && game.p2_proof_submitted {
             Self::resolve_match_internal(&env, session_id, &mut game);
         }
 
@@ -370,13 +382,13 @@ impl ZkombatContract {
 
         // Claimer must have submitted, opponent must not have
         let player1_won = if claimer == game.player1
-            && game.p1_proof.is_some()
-            && game.p2_proof.is_none()
+            && game.p1_proof_submitted
+            && !game.p2_proof_submitted
         {
             true
         } else if claimer == game.player2
-            && game.p2_proof.is_some()
-            && game.p1_proof.is_none()
+            && game.p2_proof_submitted
+            && !game.p1_proof_submitted
         {
             false
         } else {
@@ -431,8 +443,16 @@ impl ZkombatContract {
     // ====================================================================
 
     fn resolve_match_internal(env: &Env, session_id: u32, game: &mut GameMatch) {
-        let p1 = game.p1_proof.as_ref().unwrap();
-        let p2 = game.p2_proof.as_ref().unwrap();
+        let p1: ProofSubmission = env
+            .storage()
+            .temporary()
+            .get(&DataKey::P1Proof(session_id))
+            .expect("P1 proof missing");
+        let p2: ProofSubmission = env
+            .storage()
+            .temporary()
+            .get(&DataKey::P2Proof(session_id))
+            .expect("P2 proof missing");
 
         let cfg: PointConfig = env
             .storage()

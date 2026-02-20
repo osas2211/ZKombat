@@ -1,11 +1,8 @@
 #![cfg(test)]
 
-use crate::{
-    Error, GameMatch, LeaderboardEntry, MatchStatus, PlayerStats, PointConfig, ProofSubmission,
-    ZkombatContract, ZkombatContractClient,
-};
+use crate::{Error, MatchStatus, PointConfig, ZkombatContract, ZkombatContractClient};
 use soroban_sdk::testutils::{Address as _, Ledger as _};
-use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env, Vec};
+use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env};
 
 // ============================================================================
 // Mock GameHub
@@ -144,8 +141,8 @@ fn test_create_match() {
     assert_eq!(game.player1, player1);
     assert_eq!(game.player2, player2);
     assert_eq!(game.status, MatchStatus::Active);
-    assert!(game.p1_proof.is_none());
-    assert!(game.p2_proof.is_none());
+    assert!(!game.p1_proof_submitted);
+    assert!(!game.p2_proof_submitted);
     assert!(game.winner.is_none());
 }
 
@@ -170,8 +167,8 @@ fn test_full_match_flow_p1_wins() {
 
     let game = client.get_match(&1u32);
     assert_eq!(game.status, MatchStatus::ProofPhase);
-    assert!(game.p1_proof.is_some());
-    assert!(game.p2_proof.is_none());
+    assert!(game.p1_proof_submitted);
+    assert!(!game.p2_proof_submitted);
 
     // Player 2 submits proof: lost with 0 health, opponent at 60
     client.submit_proof(
@@ -549,9 +546,9 @@ fn test_forfeit_after_timeout() {
     assert_eq!(game.status, MatchStatus::Forfeit);
     assert_eq!(game.winner, Some(player1.clone()));
 
-    // Check forfeit points
+    // Check forfeit points: 75 (forfeit win) + 10 (streak bonus, streak=1) = 85
     let stats = client.get_player_stats(&player1);
-    assert_eq!(stats.total_points, 75); // forfeit_win_points
+    assert_eq!(stats.total_points, 85);
 }
 
 #[test]
