@@ -1,0 +1,7 @@
+[package]
+name = "zkombat"
+type = "bin"
+authors = ["ZKombat"]
+compiler_version = ">=0.1.0"
+
+[dependencies]
