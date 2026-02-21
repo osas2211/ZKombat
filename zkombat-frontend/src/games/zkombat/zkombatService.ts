@@ -278,19 +278,18 @@ export class ZkombatService {
 
   /**
    * Submit a ZK proof after the fight.
-   * This calls submit_proof on the contract which verifies the proof
-   * via the UltraHonk verifier and stores the result.
+   * This calls submit_proof on the contract which verifies the Groth16
+   * proof via the Circom verifier and stores the result.
    */
   async submitProof(
     sessionId: number,
     playerAddress: string,
     proofBytes: Uint8Array,
-    publicInputs: Uint8Array,
     inputHash: Uint8Array,
     myFinalHealth: number,
     opponentFinalHealth: number,
     totalDamageDealt: number,
-    iWon: boolean,
+    iWon: number,
     signer: Pick<contract.ClientOptions, 'signTransaction' | 'signAuthEntry'>,
     authTtlMinutes?: number
   ) {
@@ -299,7 +298,6 @@ export class ZkombatService {
       session_id: sessionId,
       player: playerAddress,
       proof_bytes: Buffer.from(proofBytes),
-      public_inputs: Buffer.from(publicInputs),
       input_hash: Buffer.from(inputHash),
       my_final_health: myFinalHealth,
       opponent_final_health: opponentFinalHealth,

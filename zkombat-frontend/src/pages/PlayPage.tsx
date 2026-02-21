@@ -153,7 +153,6 @@ export function PlayPage() {
             sessionIdRef.current,
             publicKey,
             proof.proofBytes,
-            new Uint8Array(0), // public inputs encoded in proof
             proof.submission.input_hash,
             proof.submission.my_final_health,
             proof.submission.opponent_final_health,

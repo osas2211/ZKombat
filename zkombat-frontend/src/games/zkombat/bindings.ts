@@ -103,7 +103,7 @@ export interface PointConfig {
 
 
 export interface ProofSubmission {
-  i_won: boolean;
+  i_won: u32;
   input_hash: Buffer;
   my_final_health: u32;
   opponent_final_health: u32;
@@ -165,7 +165,7 @@ export interface Client {
   /**
    * Construct and simulate a submit_proof transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  submit_proof: ({session_id, player, proof_bytes, public_inputs, input_hash, my_final_health, opponent_final_health, total_damage_dealt, i_won}: {session_id: u32, player: string, proof_bytes: Buffer, public_inputs: Buffer, input_hash: Buffer, my_final_health: u32, opponent_final_health: u32, total_damage_dealt: u32, i_won: boolean}, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
+  submit_proof: ({session_id, player, proof_bytes, input_hash, my_final_health, opponent_final_health, total_damage_dealt, i_won}: {session_id: u32, player: string, proof_bytes: Buffer, input_hash: Buffer, my_final_health: u32, opponent_final_health: u32, total_damage_dealt: u32, i_won: u32}, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
 
   /**
    * Construct and simulate a claim_forfeit transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
