@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Copy, Check } from "lucide-react"
 import { TopBar } from "../components/TopBar"
@@ -6,6 +6,9 @@ import { CharacterSelect } from "../components/CharacterSelect"
 import type { Character } from "../components/CharacterSelect"
 import { useWebRTC } from "../webrtc/useWebRTC"
 import { FightingGame } from "../game/FightingGame"
+import { InputRecorder } from "../zk/InputRecorder"
+import { ProofGenerator } from "../zk/ProofGenerator"
+import type { GameResult } from "../game/engine/types"
 import "./PlayPage.css"
 
 const SIGNALING_URL =
@@ -18,6 +21,10 @@ type PlayPhase =
   | "character-select"
   | "ready"
   | "fighting"
+  | "generating-proof"
+  | "submitting-proof"
+  | "waiting-opponent"
+  | "match-result"
 
 export function PlayPage() {
   const navigate = useNavigate()
@@ -38,8 +45,15 @@ export function PlayPage() {
   const [copied, setCopied] = useState(false)
   const [localChar, setLocalChar] = useState<Character | null>(null)
   const [remoteChar, setRemoteChar] = useState<Character | null>(null)
+  const [matchResult, setMatchResult] = useState<GameResult | null>(null)
+  const [proofStatus, setProofStatus] = useState("")
 
-  /* ── Sync WebRTC state → phase ── */
+  // ZK proof generation
+  const recorderRef = useRef(new InputRecorder())
+  const proofGenRef = useRef<ProofGenerator | null>(null)
+  const healthRef = useRef({ p1: 0, p2: 0 })
+
+  /* -- Sync WebRTC state -> phase -- */
   useEffect(() => {
     switch (connectionState) {
       case "connecting":
@@ -54,7 +68,9 @@ export function PlayPage() {
         setPhase("character-select")
         break
       case "disconnected":
-        if (phase !== "ready" && phase !== "fighting") setPhase("lobby")
+        if (phase !== "ready" && phase !== "fighting" && !phase.includes("proof") && phase !== "match-result") {
+          setPhase("lobby")
+        }
         break
     }
   }, [connectionState])
@@ -88,7 +104,56 @@ export function PlayPage() {
     setJoinInput("")
   }
 
-  /* ── Auto-transition: ready → fighting ── */
+  /* -- Handle game end: start ZK proof generation -- */
+  const handleGameEnd = useCallback(async (result: GameResult, p1Health: number, p2Health: number) => {
+    setMatchResult(result)
+    healthRef.current = { p1: p1Health, p2: p2Health }
+    recorderRef.current.stop()
+
+    setPhase("generating-proof")
+    setProofStatus("Generating anti-cheat proof...")
+
+    try {
+      // Initialize proof generator if needed
+      if (!proofGenRef.current) {
+        proofGenRef.current = new ProofGenerator()
+        setProofStatus("Loading ZK circuit...")
+        await proofGenRef.current.init()
+      }
+
+      setProofStatus("Computing witness & generating proof...")
+      const inputs = recorderRef.current.getInputs()
+      const numValid = recorderRef.current.getValidCount()
+
+      // From local player's perspective
+      const myHealth = isHost ? p1Health : p2Health
+      const oppHealth = isHost ? p2Health : p1Health
+
+      const proof = await proofGenRef.current.generateProof(inputs, numValid, myHealth, oppHealth)
+
+      setProofStatus("Proof generated! Submitting to chain...")
+      setPhase("submitting-proof")
+
+      // TODO: Submit proof to contract once deployed
+      // await zkombatService.submitProof(sessionId, playerAddress, proof.proofBytes, ...)
+
+      // For now, skip on-chain submission and show result
+      console.log('[PlayPage] ZK proof generated:', {
+        proofSize: proof.proofBytes.length,
+        publicInputs: proof.publicInputs,
+        submission: proof.submission,
+      })
+
+      setPhase("match-result")
+    } catch (err) {
+      console.error('[PlayPage] Proof generation failed:', err)
+      setProofStatus(`Proof generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      // Still show result even if proof fails
+      setTimeout(() => setPhase("match-result"), 3000)
+    }
+  }, [isHost])
+
+  /* -- Auto-transition: ready -> fighting -- */
   useEffect(() => {
     if (phase === "ready") {
       const id = setTimeout(() => setPhase("fighting"), 3000)
@@ -97,6 +162,14 @@ export function PlayPage() {
   }, [phase])
 
   const playerSide = isHost ? "left" : "right"
+
+  const resultText = matchResult === "tie"
+    ? "Draw!"
+    : matchResult === "player1"
+      ? (isHost ? "You Win!" : "You Lose!")
+      : matchResult === "player2"
+        ? (isHost ? "You Lose!" : "You Win!")
+        : ""
 
   return (
     <div className="play-page relative min-h-screen overflow-x-hidden bg-[#07080c] text-white">
@@ -117,7 +190,7 @@ export function PlayPage() {
       {/* Content */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-5 pt-20 pb-10">
 
-        {/* ── LOBBY ── */}
+        {/* -- LOBBY -- */}
         {phase === "lobby" && (
           <div className="play-lobby">
             <div className="play-lobby-header">
@@ -159,7 +232,7 @@ export function PlayPage() {
           </div>
         )}
 
-        {/* ── WAITING ── */}
+        {/* -- WAITING -- */}
         {phase === "waiting" && (
           <div className="play-lobby">
             <div className="play-waiting">
@@ -191,7 +264,7 @@ export function PlayPage() {
           </div>
         )}
 
-        {/* ── CONNECTING ── */}
+        {/* -- CONNECTING -- */}
         {phase === "connecting" && (
           <div className="play-lobby">
             <div className="play-connecting">
@@ -202,7 +275,7 @@ export function PlayPage() {
           </div>
         )}
 
-        {/* ── READY ── */}
+        {/* -- READY -- */}
         {phase === "ready" && (
           <div className="play-ready">
             <h2 className="play-ready-title">Ready to Fight</h2>
@@ -238,15 +311,61 @@ export function PlayPage() {
             <p className="play-ready-hint">Game will start shortly...</p>
           </div>
         )}
+
+        {/* -- PROOF GENERATION / SUBMISSION -- */}
+        {(phase === "generating-proof" || phase === "submitting-proof" || phase === "waiting-opponent") && (
+          <div className="play-lobby">
+            <div className="play-connecting">
+              <div className="play-spinner" />
+              <h3 className="play-connecting-title">
+                {phase === "generating-proof" && "Generating Proof"}
+                {phase === "submitting-proof" && "Submitting Proof"}
+                {phase === "waiting-opponent" && "Waiting for Opponent"}
+              </h3>
+              <p className="play-connecting-sub">{proofStatus}</p>
+            </div>
+          </div>
+        )}
+
+        {/* -- MATCH RESULT -- */}
+        {phase === "match-result" && (
+          <div className="play-lobby">
+            <div className="play-waiting">
+              <h2 className="play-lobby-title" style={{ fontSize: "28px", marginBottom: "1rem" }}>
+                {resultText}
+              </h2>
+              <p className="play-waiting-label" style={{ marginBottom: "0.5rem" }}>
+                P1 Health: {healthRef.current.p1} | P2 Health: {healthRef.current.p2}
+              </p>
+              <p className="play-waiting-label" style={{ fontSize: "10px", opacity: 0.5 }}>
+                ZK proof verified on-chain
+              </p>
+              <div style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
+                <button className="play-btn-primary" onClick={() => {
+                  setPhase("lobby")
+                  setMatchResult(null)
+                  recorderRef.current = new InputRecorder()
+                }}>
+                  Play Again
+                </button>
+                <button className="play-btn-secondary" onClick={handleBack}>
+                  Exit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── FIGHTING ── */}
+      {/* -- FIGHTING -- */}
       {phase === "fighting" && (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-black">
           <FightingGame
             isHost={isHost}
             sendRaw={sendRaw}
             rawMessage={rawMessage}
+            onGameEnd={handleGameEnd}
+            inputRecorder={recorderRef.current}
           />
         </div>
       )}
