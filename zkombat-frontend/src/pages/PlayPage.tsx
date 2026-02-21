@@ -5,14 +5,18 @@ import { TopBar } from "../components/TopBar"
 import { CharacterSelect } from "../components/CharacterSelect"
 import type { Character } from "../components/CharacterSelect"
 import { useWebRTC } from "../webrtc/useWebRTC"
+import { useWallet } from "../hooks/useWallet"
 import { FightingGame } from "../game/FightingGame"
 import { InputRecorder } from "../zk/InputRecorder"
 import { ProofGenerator } from "../zk/ProofGenerator"
+import { ZkombatService } from "../games/zkombat/zkombatService"
+import { ZKOMBAT_CONTRACT } from "../utils/constants"
 import type { GameResult } from "../game/engine/types"
 import "./PlayPage.css"
 
 const SIGNALING_URL =
   import.meta.env.VITE_SIGNALING_URL || "ws://localhost:3001"
+const zkombatService = new ZkombatService(ZKOMBAT_CONTRACT)
 
 type PlayPhase =
   | "lobby"
@@ -28,6 +32,7 @@ type PlayPhase =
 
 export function PlayPage() {
   const navigate = useNavigate()
+  const { publicKey, isConnected, getContractSigner } = useWallet()
   const {
     connectionState,
     roomId,
@@ -52,6 +57,7 @@ export function PlayPage() {
   const recorderRef = useRef(new InputRecorder())
   const proofGenRef = useRef<ProofGenerator | null>(null)
   const healthRef = useRef({ p1: 0, p2: 0 })
+  const sessionIdRef = useRef<number | null>(null)
 
   /* -- Sync WebRTC state -> phase -- */
   useEffect(() => {
@@ -131,18 +137,38 @@ export function PlayPage() {
 
       const proof = await proofGenRef.current.generateProof(inputs, numValid, myHealth, oppHealth)
 
-      setProofStatus("Proof generated! Submitting to chain...")
-      setPhase("submitting-proof")
-
-      // TODO: Submit proof to contract once deployed
-      // await zkombatService.submitProof(sessionId, playerAddress, proof.proofBytes, ...)
-
-      // For now, skip on-chain submission and show result
       console.log('[PlayPage] ZK proof generated:', {
         proofSize: proof.proofBytes.length,
         publicInputs: proof.publicInputs,
         submission: proof.submission,
       })
+
+      // Try on-chain proof submission if wallet is connected and match exists
+      if (isConnected && publicKey && sessionIdRef.current !== null) {
+        setProofStatus("Submitting proof to Stellar...")
+        setPhase("submitting-proof")
+        try {
+          const signer = getContractSigner()
+          await zkombatService.submitProof(
+            sessionIdRef.current,
+            publicKey,
+            proof.proofBytes,
+            new Uint8Array(0), // public inputs encoded in proof
+            proof.submission.input_hash,
+            proof.submission.my_final_health,
+            proof.submission.opponent_final_health,
+            proof.submission.total_damage_dealt,
+            proof.submission.i_won,
+            signer,
+          )
+          setProofStatus("Proof verified on-chain!")
+        } catch (chainErr) {
+          console.warn('[PlayPage] On-chain submission failed (match may not exist on-chain):', chainErr)
+          setProofStatus("Proof generated successfully (off-chain)")
+        }
+      } else {
+        setProofStatus("Proof generated successfully")
+      }
 
       setPhase("match-result")
     } catch (err) {
@@ -151,15 +177,23 @@ export function PlayPage() {
       // Still show result even if proof fails
       setTimeout(() => setPhase("match-result"), 3000)
     }
-  }, [isHost])
+  }, [isHost, isConnected, publicKey, getContractSigner])
 
   /* -- Auto-transition: ready -> fighting -- */
   useEffect(() => {
     if (phase === "ready") {
+      // Generate a session ID from the room code for on-chain tracking
+      if (roomId && sessionIdRef.current === null) {
+        let hash = 0
+        for (let i = 0; i < roomId.length; i++) {
+          hash = ((hash << 5) - hash + roomId.charCodeAt(i)) | 0
+        }
+        sessionIdRef.current = Math.abs(hash) % 2147483647
+      }
       const id = setTimeout(() => setPhase("fighting"), 3000)
       return () => clearTimeout(id)
     }
-  }, [phase])
+  }, [phase, roomId])
 
   const playerSide = isHost ? "left" : "right"
 
@@ -338,7 +372,7 @@ export function PlayPage() {
                 P1 Health: {healthRef.current.p1} | P2 Health: {healthRef.current.p2}
               </p>
               <p className="play-waiting-label" style={{ fontSize: "10px", opacity: 0.5 }}>
-                ZK proof verified on-chain
+                {proofStatus || "ZK proof generated"}
               </p>
               <div style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
                 <button className="play-btn-primary" onClick={() => {
