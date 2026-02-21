@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import { ChevronRight, Lock } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useGSAP } from "@gsap/react"
@@ -6,6 +6,9 @@ import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { NeonButton } from "../components/NeonButton"
 import { TopBar } from "../components/TopBar"
+import { ZkombatService } from "../games/zkombat/zkombatService"
+import { ZKOMBAT_CONTRACT } from "../utils/constants"
+import type { LeaderboardEntry, PlayerStats } from "../games/zkombat/bindings"
 import "./SelectGamePage.css"
 
 gsap.registerPlugin(ScrollTrigger)
@@ -122,16 +125,70 @@ function HeroSection() {
 /* ═══════════════════════════════════════════════════════
    LEADERBOARD — Left column
    ═══════════════════════════════════════════════════════ */
+const RANK_COLORS = ["#facc15", "#a1a1aa", "#cd7c32", "#3b82f6", "#3b82f6"]
+
+const zkombatService = new ZkombatService(ZKOMBAT_CONTRACT)
+
+interface LeaderboardRow {
+  rank: number
+  address: string
+  points: bigint
+  wins: number
+  losses: number
+  color: string
+}
+
+function truncateAddress(addr: string): string {
+  if (addr.length <= 12) return addr
+  return `${addr.slice(0, 4)}...${addr.slice(-4)}`
+}
+
 function LeaderboardSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
+  const [rows, setRows] = useState<LeaderboardRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const hasFetched = useRef(false)
 
-  const players = [
-    { rank: 1, name: "xShadowKing", wins: 142, losses: 31, color: "#facc15" },
-    { rank: 2, name: "NathanBOTCR1S16", wins: 128, losses: 40, color: "#a1a1aa" },
-    { rank: 3, name: "MyGirl_gaming", wins: 115, losses: 44, color: "#cd7c32" },
-    { rank: 4, name: "JimmyMurphy12", wins: 98, losses: 52, color: "#3b82f6" },
-    { rank: 5, name: "0xPhr4ck", wins: 87, losses: 61, color: "#3b82f6" },
-  ]
+  useEffect(() => {
+    if (hasFetched.current) return
+    hasFetched.current = true
+
+    async function fetchLeaderboard() {
+      try {
+        const entries: LeaderboardEntry[] = await zkombatService.getLeaderboard()
+        if (entries.length === 0) {
+          setLoading(false)
+          return
+        }
+
+        // Fetch player stats in parallel for wins/losses
+        const statsPromises = entries.map((e) =>
+          zkombatService.getPlayerStats(e.player).catch(() => null)
+        )
+        const stats = await Promise.all(statsPromises)
+
+        const leaderboard: LeaderboardRow[] = entries.map((entry, i) => {
+          const playerStats: PlayerStats | null = stats[i]
+          return {
+            rank: i + 1,
+            address: entry.player,
+            points: typeof entry.points === "bigint" ? entry.points : BigInt(entry.points),
+            wins: playerStats?.wins ?? 0,
+            losses: playerStats?.losses ?? 0,
+            color: RANK_COLORS[Math.min(i, RANK_COLORS.length - 1)],
+          }
+        })
+
+        setRows(leaderboard)
+      } catch (err) {
+        console.warn("[Leaderboard] Failed to fetch:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLeaderboard()
+  }, [])
 
   useGSAP(
     () => {
@@ -192,7 +249,7 @@ function LeaderboardSection() {
         },
       )
     },
-    { scope: sectionRef },
+    { scope: sectionRef, dependencies: [rows] },
   )
 
   return (
@@ -208,70 +265,85 @@ function LeaderboardSection() {
         <span className="text-[10px] text-white/30 uppercase tracking-wider">Season 1</span>
       </div>
 
-      {/* Column labels */}
-      <div className="mb-2 flex items-center gap-2.5 px-2.5 text-[9px] font-medium tracking-wider text-white/25 uppercase">
-        <span className="w-5 text-center">#</span>
-        <span className="w-8" />
-        <span className="flex-1">Player</span>
-        <span className="w-10 text-right">W</span>
-        <span className="w-10 text-right">L</span>
-        <span className="w-14 text-right">Win %</span>
-      </div>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="lb-spinner" />
+          <p className="mt-3 text-[11px] text-white/30">Loading leaderboard...</p>
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12">
+          <p className="text-[12px] text-white/40">No matches played yet</p>
+          <p className="mt-1 text-[10px] text-white/20">Be the first on the leaderboard!</p>
+        </div>
+      ) : (
+        <>
+          {/* Column labels */}
+          <div className="mb-2 flex items-center gap-2.5 px-2.5 text-[9px] font-medium tracking-wider text-white/25 uppercase">
+            <span className="w-5 text-center">#</span>
+            <span className="w-8" />
+            <span className="flex-1">Player</span>
+            <span className="w-10 text-right">W</span>
+            <span className="w-10 text-right">L</span>
+            <span className="w-14 text-right">Win %</span>
+          </div>
 
-      {/* Rows */}
-      <div className="flex flex-col gap-1">
-        {players.map((p) => {
-          const winRate = Math.round((p.wins / (p.wins + p.losses)) * 100)
-          const isTop3 = p.rank <= 3
-          return (
-            <div
-              key={p.rank}
-              className={`lb-row flex items-center gap-2.5 rounded-lg px-2.5 py-2 ${isTop3 ? "lb-row--top" : ""}`}
-            >
-              {/* Rank */}
-              <span
-                className={`w-5 text-center text-[11px] font-bold ${isTop3 ? "" : "text-white/30"}`}
-                style={isTop3 ? { color: p.color } : undefined}
-              >
-                {p.rank}
-              </span>
+          {/* Rows */}
+          <div className="flex flex-col gap-1">
+            {rows.map((p) => {
+              const total = p.wins + p.losses
+              const winRate = total > 0 ? Math.round((p.wins / total) * 100) : 0
+              const isTop3 = p.rank <= 3
+              return (
+                <div
+                  key={p.address}
+                  className={`lb-row flex items-center gap-2.5 rounded-lg px-2.5 py-2 ${isTop3 ? "lb-row--top" : ""}`}
+                >
+                  {/* Rank */}
+                  <span
+                    className={`w-5 text-center text-[11px] font-bold ${isTop3 ? "" : "text-white/30"}`}
+                    style={isTop3 ? { color: p.color } : undefined}
+                  >
+                    {p.rank}
+                  </span>
 
-              {/* Avatar */}
-              <div
-                className="lb-avatar flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-                style={{ backgroundColor: p.color }}
-              >
-                <span className="text-[9px] font-bold text-white">
-                  {p.name[0]}
-                </span>
-              </div>
+                  {/* Avatar */}
+                  <div
+                    className="lb-avatar flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                    style={{ backgroundColor: p.color }}
+                  >
+                    <span className="text-[9px] font-bold text-white">
+                      {p.address[0]}
+                    </span>
+                  </div>
 
-              {/* Name */}
-              <span className="flex-1 min-w-0 truncate text-[11px] font-medium text-white/80">
-                {p.name}
-              </span>
+                  {/* Address */}
+                  <span className="flex-1 min-w-0 truncate text-[11px] font-medium text-white/80 font-mono">
+                    {truncateAddress(p.address)}
+                  </span>
 
-              {/* Wins */}
-              <span className="w-10 text-right text-[11px] text-green-400/80">
-                {p.wins}
-              </span>
+                  {/* Wins */}
+                  <span className="w-10 text-right text-[11px] text-green-400/80">
+                    {p.wins}
+                  </span>
 
-              {/* Losses */}
-              <span className="w-10 text-right text-[11px] text-red-400/60">
-                {p.losses}
-              </span>
+                  {/* Losses */}
+                  <span className="w-10 text-right text-[11px] text-red-400/60">
+                    {p.losses}
+                  </span>
 
-              {/* Win rate bar */}
-              <div className="w-14 flex items-center justify-end gap-1.5">
-                <div className="lb-bar-track">
-                  <div className="lb-bar-fill" style={{ width: `${winRate}%` }} />
+                  {/* Win rate bar */}
+                  <div className="w-14 flex items-center justify-end gap-1.5">
+                    <div className="lb-bar-track">
+                      <div className="lb-bar-fill" style={{ width: `${winRate}%` }} />
+                    </div>
+                    <span className="text-[10px] text-white/40">{winRate}%</span>
+                  </div>
                 </div>
-                <span className="text-[10px] text-white/40">{winRate}%</span>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }

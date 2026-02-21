@@ -4,6 +4,8 @@ test_snapshots/
 target/
 *.wasm
 
+powersOfTau28_hez_final_17.ptau
+
 # Deployment info
 deployment.json
 
