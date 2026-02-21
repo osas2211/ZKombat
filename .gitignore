@@ -31,6 +31,18 @@ frontend-template/*.tsbuildinfo
 *-frontend/dist-node/
 *-frontend/*.tsbuildinfo
 
+# Circuit build artifacts & ceremony files
+circuits/*/build/
+circuits/*/*.ptau
+circuits/*/*.zkey
+circuits/*/test_input.json
+circuits/*/proof.json
+circuits/*/public.json
+
+# Large ZK files in frontend public (tracked via LFS or downloaded)
+zkombat-frontend/public/*.zkey
+zkombat-frontend/public/*-circuit.wasm
+
 # IDE
 .vscode/
 .idea/

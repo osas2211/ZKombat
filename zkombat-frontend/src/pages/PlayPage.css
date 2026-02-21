@@ -407,3 +407,70 @@
   color: rgba(255, 255, 255, 0.25);
   margin-top: 2rem;
 }
+
+/* ═══════════════════════════════════════════
+   ON-CHAIN CONFIRMATION
+   ═══════════════════════════════════════════ */
+
+.play-tx-confirmed {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  background: rgba(0, 220, 130, 0.08);
+  border: 1px solid rgba(0, 220, 130, 0.25);
+  border-radius: 20px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(0, 220, 130, 0.8);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.play-tx-hash {
+  font-family: "IBM Plex Mono", "Fira Code", monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.04em;
+}
+
+.play-tx-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(0, 200, 255, 0.5);
+  text-decoration: none;
+  transition: color 0.2s;
+  margin-top: 0.35rem;
+}
+
+.play-tx-link:hover {
+  color: rgba(0, 200, 255, 0.8);
+}
+
+/* ═══════════════════════════════════════════
+   WALLET GATE
+   ═══════════════════════════════════════════ */
+
+.play-wallet-gate {
+  text-align: center;
+}
+
+.play-wallet-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 200, 255, 0.06);
+  border: 1px solid rgba(0, 200, 255, 0.15);
+  margin-bottom: 1.25rem;
+}
+
+.play-wallet-icon svg {
+  color: rgba(0, 200, 255, 0.5);
+}

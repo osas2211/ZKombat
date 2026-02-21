@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowLeft, Copy, Check } from "lucide-react"
+import { ArrowLeft, Copy, Check, Wallet, ExternalLink } from "lucide-react"
 import { TopBar } from "../components/TopBar"
 import { CharacterSelect } from "../components/CharacterSelect"
 import type { Character } from "../components/CharacterSelect"
 import { useWebRTC } from "../webrtc/useWebRTC"
-import { useWallet } from "../hooks/useWallet"
+import { useWalletStandalone } from "../hooks/useWalletStandalone"
 import { FightingGame } from "../game/FightingGame"
 import { InputRecorder } from "../zk/InputRecorder"
 import { ProofGenerator } from "../zk/ProofGenerator"
 import { ZkombatService } from "../games/zkombat/zkombatService"
-import { ZKOMBAT_CONTRACT } from "../utils/constants"
+import { ZKOMBAT_CONTRACT, STELLAR_EXPERT_URL } from "../utils/constants"
 import type { GameResult } from "../game/engine/types"
 import "./PlayPage.css"
 
@@ -32,7 +32,7 @@ type PlayPhase =
 
 export function PlayPage() {
   const navigate = useNavigate()
-  const { publicKey, isConnected, getContractSigner } = useWallet()
+  const { publicKey, isConnected, getContractSigner, connect, isConnecting } = useWalletStandalone()
   const {
     connectionState,
     roomId,
@@ -52,6 +52,7 @@ export function PlayPage() {
   const [remoteChar, setRemoteChar] = useState<Character | null>(null)
   const [matchResult, setMatchResult] = useState<GameResult | null>(null)
   const [proofStatus, setProofStatus] = useState("")
+  const [txHash, setTxHash] = useState<string | null>(null)
 
   // ZK proof generation
   const recorderRef = useRef(new InputRecorder())
@@ -149,7 +150,7 @@ export function PlayPage() {
         setPhase("submitting-proof")
         try {
           const signer = getContractSigner()
-          await zkombatService.submitProof(
+          const { txHash: hash } = await zkombatService.submitProof(
             sessionIdRef.current,
             publicKey,
             proof.proofBytes,
@@ -160,6 +161,7 @@ export function PlayPage() {
             proof.submission.i_won,
             signer,
           )
+          if (hash) setTxHash(hash)
           setProofStatus("Proof verified on-chain!")
         } catch (chainErr) {
           console.warn('[PlayPage] On-chain submission failed (match may not exist on-chain):', chainErr)
@@ -226,42 +228,63 @@ export function PlayPage() {
         {/* -- LOBBY -- */}
         {phase === "lobby" && (
           <div className="play-lobby">
-            <div className="play-lobby-header">
-              <h2 className="play-lobby-title">Match Lobby</h2>
-              <p className="play-lobby-sub">Create a room or join with a code</p>
-            </div>
+            {!isConnected ? (
+              <div className="play-wallet-gate">
+                <div className="play-wallet-icon">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <h2 className="play-lobby-title">Connect Wallet</h2>
+                <p className="play-lobby-sub" style={{ marginBottom: "1.5rem" }}>
+                  Connect your Stellar wallet to start playing
+                </p>
+                <button
+                  className="play-btn-primary"
+                  onClick={() => connect().catch(() => undefined)}
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? "Connecting..." : "Connect Wallet"}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="play-lobby-header">
+                  <h2 className="play-lobby-title">Match Lobby</h2>
+                  <p className="play-lobby-sub">Create a room or join with a code</p>
+                </div>
 
-            {error && <div className="play-error">{error}</div>}
+                {error && <div className="play-error">{error}</div>}
 
-            <button className="play-btn-primary" onClick={() => createRoom()}>
-              Create Room
-            </button>
+                <button className="play-btn-primary" onClick={() => createRoom()}>
+                  Create Room
+                </button>
 
-            <div className="play-divider">
-              <div className="play-divider-line" />
-              <span className="play-divider-text">or</span>
-              <div className="play-divider-line" />
-            </div>
+                <div className="play-divider">
+                  <div className="play-divider-line" />
+                  <span className="play-divider-text">or</span>
+                  <div className="play-divider-line" />
+                </div>
 
-            <div className="play-join-row">
-              <input
-                type="text"
-                placeholder="Enter room code"
-                value={joinInput}
-                onChange={(e) => setJoinInput(e.target.value.toUpperCase())}
-                maxLength={6}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && joinInput.trim()) joinRoom(joinInput.trim())
-                }}
-              />
-              <button
-                className="play-btn-join"
-                onClick={() => joinInput.trim() && joinRoom(joinInput.trim())}
-                disabled={!joinInput.trim()}
-              >
-                Join
-              </button>
-            </div>
+                <div className="play-join-row">
+                  <input
+                    type="text"
+                    placeholder="Enter room code"
+                    value={joinInput}
+                    onChange={(e) => setJoinInput(e.target.value.toUpperCase())}
+                    maxLength={6}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && joinInput.trim()) joinRoom(joinInput.trim())
+                    }}
+                  />
+                  <button
+                    className="play-btn-join"
+                    onClick={() => joinInput.trim() && joinRoom(joinInput.trim())}
+                    disabled={!joinInput.trim()}
+                  >
+                    Join
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -373,10 +396,29 @@ export function PlayPage() {
               <p className="play-waiting-label" style={{ fontSize: "10px", opacity: 0.5 }}>
                 {proofStatus || "ZK proof generated"}
               </p>
+
+              {txHash && (
+                <div style={{ marginTop: "1rem" }}>
+                  <span className="play-tx-confirmed">Verified On-Chain</span>
+                  <p className="play-tx-hash">
+                    {txHash.slice(0, 8)}...{txHash.slice(-8)}
+                  </p>
+                  <a
+                    className="play-tx-link"
+                    href={`${STELLAR_EXPERT_URL}/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View on Stellar Expert <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+
               <div style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
                 <button className="play-btn-primary" onClick={() => {
                   setPhase("lobby")
                   setMatchResult(null)
+                  setTxHash(null)
                   recorderRef.current = new InputRecorder()
                 }}>
                   Play Again

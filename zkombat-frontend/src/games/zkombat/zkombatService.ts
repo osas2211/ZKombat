@@ -292,7 +292,7 @@ export class ZkombatService {
     iWon: number,
     signer: Pick<contract.ClientOptions, 'signTransaction' | 'signAuthEntry'>,
     authTtlMinutes?: number
-  ) {
+  ): Promise<{ result: any; txHash?: string }> {
     const client = this.createSigningClient(playerAddress, signer);
     const tx = await client.submit_proof({
       session_id: sessionId,
@@ -314,7 +314,10 @@ export class ZkombatService {
       DEFAULT_METHOD_OPTIONS.timeoutInSeconds,
       validUntilLedgerSeq
     );
-    return sentTx.result;
+    return {
+      result: sentTx.result,
+      txHash: sentTx.sendTransactionResponse?.hash,
+    };
   }
 
   // ================================================================

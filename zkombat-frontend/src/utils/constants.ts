@@ -77,3 +77,8 @@ export const DEFAULT_METHOD_OPTIONS = {
 // Auth TTL constants (in minutes)
 export const DEFAULT_AUTH_TTL_MINUTES = 5;
 export const MULTI_SIG_AUTH_TTL_MINUTES = 60;
+
+// Block explorer
+export const STELLAR_EXPERT_URL = NETWORK === 'testnet'
+  ? 'https://stellar.expert/explorer/testnet'
+  : 'https://stellar.expert/explorer/public';
