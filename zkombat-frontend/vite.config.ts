@@ -7,17 +7,21 @@ export default defineConfig({
   // Load .env files from the parent directory (repo root)
   envDir: '..',
   define: {
-    global: 'globalThis'
+    global: 'globalThis',
+    'process.env': {},
+    'process.browser': true,
+    'process.version': '"v20.0.0"'
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      buffer: path.resolve(__dirname, './node_modules/buffer/')
+      buffer: path.resolve(__dirname, './node_modules/buffer/'),
+      util: path.resolve(__dirname, './node_modules/util/')
     },
     dedupe: ['@stellar/stellar-sdk']
   },
   optimizeDeps: {
-    include: ['@stellar/stellar-sdk', '@stellar/stellar-sdk/contract', '@stellar/stellar-sdk/rpc', 'buffer', 'snarkjs', 'circomlibjs'],
+    include: ['@stellar/stellar-sdk', '@stellar/stellar-sdk/contract', '@stellar/stellar-sdk/rpc', 'buffer', 'util', 'snarkjs', 'circomlibjs'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

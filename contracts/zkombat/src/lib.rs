@@ -398,6 +398,10 @@ impl ZkombatContract {
                 .temporary()
                 .extend_ttl(&proof_key, MATCH_TTL_LEDGERS, MATCH_TTL_LEDGERS);
         } else if !game.p2_proof_submitted && player != game.player1 {
+            // If this was an auto-created match (placeholder player2 == player1),
+            // register with Game Hub now that we know both players.
+            let needs_hub_registration = game.player2 == game.player1;
+
             // Second player joining this session — slot them in as player2
             game.player2 = player.clone();
             game.p2_proof_submitted = true;
@@ -406,6 +410,23 @@ impl ZkombatContract {
             env.storage()
                 .temporary()
                 .extend_ttl(&proof_key, MATCH_TTL_LEDGERS, MATCH_TTL_LEDGERS);
+
+            if needs_hub_registration {
+                let game_hub_addr: Address = env
+                    .storage()
+                    .instance()
+                    .get(&DataKey::GameHubAddress)
+                    .expect("GameHub not set");
+                let game_hub = GameHubClient::new(&env, &game_hub_addr);
+                game_hub.start_game(
+                    &env.current_contract_address(),
+                    &session_id,
+                    &game.player1,
+                    &player,
+                    &game.player1_points,
+                    &game.player2_points,
+                );
+            }
         } else {
             return Err(Error::ProofAlreadySubmitted);
         }

@@ -11,6 +11,7 @@ import { InputRecorder } from "../zk/InputRecorder"
 import { ProofGenerator } from "../zk/ProofGenerator"
 import { ZkombatService } from "../games/zkombat/zkombatService"
 import { ZKOMBAT_CONTRACT, STELLAR_EXPERT_URL } from "../utils/constants"
+import { ensureTestnetAccountFunded } from "../utils/simulationUtils"
 import type { GameResult } from "../game/engine/types"
 import "./PlayPage.css"
 
@@ -146,9 +147,12 @@ export function PlayPage() {
 
       // Try on-chain proof submission if wallet is connected and match exists
       if (isConnected && publicKey && sessionIdRef.current !== null) {
-        setProofStatus("Submitting proof to Stellar...")
+        setProofStatus("Preparing account...")
         setPhase("submitting-proof")
         try {
+          // Ensure player's account exists on testnet (fund via Friendbot if needed)
+          await ensureTestnetAccountFunded(publicKey)
+          setProofStatus("Submitting proof to Stellar...")
           const signer = getContractSigner()
           const { txHash: hash } = await zkombatService.submitProof(
             sessionIdRef.current,

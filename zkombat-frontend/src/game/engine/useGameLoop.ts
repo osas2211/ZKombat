@@ -179,10 +179,6 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
         // Record for ZK: punch that hit (single record per punch)
         const isMyAttack = isHostRef.current
         recorderRef.current?.record(ACTION_PUNCH, isMyAttack, true, wasBlocking)
-        // If I was the one hit while blocking, record block stamina cost
-        if (!isMyAttack && wasBlocking) {
-          recorderRef.current?.record(ACTION_BLOCK, true, false, false)
-        }
       }
       if (player.isAttacking && player.framesCurrent === PLAYER_HIT_FRAME) {
         // Missed punch — record for ZK (single record per punch)
@@ -203,10 +199,6 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
         // Record for ZK: punch that hit (single record per punch)
         const isMyAttack = !isHostRef.current
         recorderRef.current?.record(ACTION_PUNCH, isMyAttack, true, wasBlocking)
-        // If I was the one hit while blocking, record block stamina cost
-        if (!isMyAttack && wasBlocking) {
-          recorderRef.current?.record(ACTION_BLOCK, true, false, false)
-        }
       }
       if (enemy.isAttacking && enemy.framesCurrent === ENEMY_HIT_FRAME) {
         // Missed punch — record for ZK (single record per punch)

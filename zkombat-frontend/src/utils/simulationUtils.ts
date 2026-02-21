@@ -17,7 +17,7 @@ async function horizonAccountExists(address: string): Promise<boolean> {
   return true;
 }
 
-async function ensureTestnetAccountFunded(address: string): Promise<void> {
+export async function ensureTestnetAccountFunded(address: string): Promise<void> {
   if (NETWORK !== 'testnet') return;
   if (await horizonAccountExists(address)) return;
 

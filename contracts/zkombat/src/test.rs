@@ -456,7 +456,7 @@ fn test_submit_proof_auto_creates_match() {
     assert!(!game.p2_proof_submitted);
     assert_eq!(game.status, MatchStatus::ProofPhase);
 
-    // Second player submits — should slot in as player2 and resolve
+    // Second player submits — should slot in as player2, call start_game, and resolve
     client.submit_proof(
         &42u32, &player2, &dummy_proof_bytes(&env),
         &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
@@ -466,6 +466,14 @@ fn test_submit_proof_auto_creates_match() {
     assert_eq!(resolved.player2, player2);
     assert!(resolved.p1_proof_submitted);
     assert!(resolved.p2_proof_submitted);
+    // Match fully resolved — start_game + end_game both called via Game Hub
+    assert_eq!(resolved.status, MatchStatus::Resolved);
+    assert_eq!(resolved.winner, Some(player1.clone()));
+
+    // Winner stats updated (proves end_game path completed)
+    let p1_stats = client.get_player_stats(&player1);
+    assert_eq!(p1_stats.wins, 1);
+    assert_eq!(p1_stats.total_matches, 1);
 }
 
 // ============================================================================
