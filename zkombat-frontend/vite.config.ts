@@ -17,7 +17,7 @@ export default defineConfig({
     dedupe: ['@stellar/stellar-sdk']
   },
   optimizeDeps: {
-    include: ['@stellar/stellar-sdk', '@stellar/stellar-sdk/contract', '@stellar/stellar-sdk/rpc', 'buffer'],
+    include: ['@stellar/stellar-sdk', '@stellar/stellar-sdk/contract', '@stellar/stellar-sdk/rpc', 'buffer', 'snarkjs', 'circomlibjs'],
     esbuildOptions: {
       define: {
         global: 'globalThis'

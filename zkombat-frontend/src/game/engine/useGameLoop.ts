@@ -176,11 +176,18 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
         setP2Stamina(enemy.stamina)
         setP1Stamina(player.stamina) // attack spent stamina
 
-        // Record for ZK: host's attack hit the enemy
+        // Record for ZK: punch that hit (single record per punch)
         const isMyAttack = isHostRef.current
         recorderRef.current?.record(ACTION_PUNCH, isMyAttack, true, wasBlocking)
+        // If I was the one hit while blocking, record block stamina cost
+        if (!isMyAttack && wasBlocking) {
+          recorderRef.current?.record(ACTION_BLOCK, true, false, false)
+        }
       }
       if (player.isAttacking && player.framesCurrent === PLAYER_HIT_FRAME) {
+        // Missed punch — record for ZK (single record per punch)
+        const isMyMiss = isHostRef.current
+        recorderRef.current?.record(ACTION_PUNCH, isMyMiss, false, false)
         player.isAttacking = false
       }
 
@@ -193,11 +200,18 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
         setP1Stamina(player.stamina)
         setP2Stamina(enemy.stamina) // attack spent stamina
 
-        // Record for ZK: guest's attack hit the player
+        // Record for ZK: punch that hit (single record per punch)
         const isMyAttack = !isHostRef.current
         recorderRef.current?.record(ACTION_PUNCH, isMyAttack, true, wasBlocking)
+        // If I was the one hit while blocking, record block stamina cost
+        if (!isMyAttack && wasBlocking) {
+          recorderRef.current?.record(ACTION_BLOCK, true, false, false)
+        }
       }
       if (enemy.isAttacking && enemy.framesCurrent === ENEMY_HIT_FRAME) {
+        // Missed punch — record for ZK (single record per punch)
+        const isMyMiss = !isHostRef.current
+        recorderRef.current?.record(ACTION_PUNCH, isMyMiss, false, false)
         enemy.isAttacking = false
       }
 
@@ -277,8 +291,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
           e.preventDefault()
           if (lf && !lf.dead) {
             lf.attack()
-            // Record my attack input for ZK
-            recorderRef.current?.record(ACTION_PUNCH, true, false, false)
+            // Punch recording happens in collision resolution (hit or miss)
           }
           li.atkC++; sendInput(); break
         case 's': case 'S':
@@ -287,8 +300,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
             li.blocking = true
             lf.startBlock()
             li.blockC++
-            // Record my block input for ZK
-            recorderRef.current?.record(ACTION_BLOCK, true, false, false)
+            // Block stamina recording happens on hit-while-blocking in collision
             sendInput()
           }
           break

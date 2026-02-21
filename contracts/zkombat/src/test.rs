@@ -381,17 +381,30 @@ fn test_cannot_submit_proof_twice() {
 }
 
 #[test]
-fn test_non_player_cannot_submit() {
+fn test_third_player_cannot_submit_after_both_slots_filled() {
     let (env, client, player1, player2, _admin) = setup_test();
     let outsider = Address::generate(&env);
 
     client.create_match(&1u32, &player1, &player2, &100_0000000, &100_0000000);
 
+    // P1 submits
+    client.submit_proof(
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
+    );
+
+    // P2 submits — fills the second slot
+    client.submit_proof(
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
+    );
+
+    // Outsider tries — match is already resolved
     let result = client.try_submit_proof(
         &1u32, &outsider, &dummy_proof_bytes(&env),
         &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
-    assert_zkombat_error(&result, Error::NotPlayer);
+    assert_zkombat_error(&result, Error::MatchAlreadyEnded);
 }
 
 #[test]
@@ -424,6 +437,35 @@ fn test_match_not_found() {
 
     let result = client.try_get_match(&999u32);
     assert_zkombat_error(&result, Error::MatchNotFound);
+}
+
+#[test]
+fn test_submit_proof_auto_creates_match() {
+    let (env, client, player1, player2, _admin) = setup_test();
+
+    // Submit proof without creating a match first — should auto-create
+    client.submit_proof(
+        &42u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
+    );
+
+    // Match should exist now with player1 as p1
+    let game = client.get_match(&42u32);
+    assert_eq!(game.player1, player1);
+    assert!(game.p1_proof_submitted);
+    assert!(!game.p2_proof_submitted);
+    assert_eq!(game.status, MatchStatus::ProofPhase);
+
+    // Second player submits — should slot in as player2 and resolve
+    client.submit_proof(
+        &42u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
+    );
+
+    let resolved = client.get_match(&42u32);
+    assert_eq!(resolved.player2, player2);
+    assert!(resolved.p1_proof_submitted);
+    assert!(resolved.p2_proof_submitted);
 }
 
 // ============================================================================

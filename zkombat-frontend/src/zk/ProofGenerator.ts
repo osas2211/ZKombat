@@ -1,9 +1,8 @@
 import type { GameInput, ZKPublicInputs, GeneratedProof, ProofSubmission } from './types'
 import { MAX_INPUTS } from './types'
 import { PUNCH_DAMAGE, BLOCKED_DAMAGE } from '../game/engine/Fighter'
-
-// snarkjs and circomlibjs are loaded dynamically
-type Snarkjs = typeof import('snarkjs')
+import * as snarkjsLib from 'snarkjs'
+import { buildPoseidon } from 'circomlibjs'
 
 const CIRCUIT_WASM_PATH = '/zkombat-circuit.wasm'
 const CIRCUIT_ZKEY_PATH = '/zkombat.zkey'
@@ -17,23 +16,17 @@ const CIRCUIT_ZKEY_PATH = '/zkombat.zkey'
  *   const proof = await gen.generateProof(inputs, numValid, myHealth, oppHealth)
  */
 export class ProofGenerator {
-  private snarkjs: Snarkjs | null = null
+  private snarkjs = snarkjsLib
   private poseidon: any = null
   private poseidonF: any = null
   private initialized = false
 
   /**
-   * Load snarkjs and circomlibjs. Call once before generating proofs.
+   * Initialize Poseidon hasher. Call once before generating proofs.
    */
   async init() {
     if (this.initialized) return
 
-    const [snarkjsMod, { buildPoseidon }] = await Promise.all([
-      import('snarkjs'),
-      import('circomlibjs'),
-    ])
-
-    this.snarkjs = snarkjsMod
     this.poseidon = await buildPoseidon()
     this.poseidonF = this.poseidon.F
     this.initialized = true
@@ -66,7 +59,7 @@ export class ProofGenerator {
     myFinalHealth: number,
     opponentFinalHealth: number,
   ): Promise<GeneratedProof> {
-    if (!this.initialized || !this.snarkjs) {
+    if (!this.initialized) {
       throw new Error('ProofGenerator not initialized. Call init() first.')
     }
 
@@ -194,7 +187,7 @@ export class ProofGenerator {
    * Verify a proof locally using snarkjs (for testing/debugging).
    */
   async verifyProof(publicSignals: string[]): Promise<boolean> {
-    if (!this.initialized || !this.snarkjs) {
+    if (!this.initialized) {
       throw new Error('ProofGenerator not initialized.')
     }
     const vkRes = await fetch('/zkombat-vk.json')
@@ -205,7 +198,6 @@ export class ProofGenerator {
 
   destroy() {
     this.initialized = false
-    this.snarkjs = null
     this.poseidon = null
     this.poseidonF = null
   }

@@ -291,8 +291,8 @@ template ZKombat(MAX_INPUTS) {
         opp_hp_sub[i].b <== my_punch_dmg[i];
         opp_hp[i + 1] <== opp_hp_sub[i].out;
 
-        // ---- Opponent punch damage to me (always 20) ----
-        opp_punch_dmg[i] <== opp_punch_hit[i] * 20;
+        // ---- Opponent punch damage to me (reduced if I was blocking) ----
+        opp_punch_dmg[i] <== opp_punch_hit[i] * (20 - opp_block[i] * 10);
 
         my_hp_sub[i] = SafeSub(8);
         my_hp_sub[i].a <== my_hp[i];

@@ -301,11 +301,24 @@ impl ZkombatContract {
         player.require_auth();
 
         let key = DataKey::Match(session_id);
-        let mut game: GameMatch = env
-            .storage()
-            .temporary()
-            .get(&key)
-            .ok_or(Error::MatchNotFound)?;
+        let mut game: GameMatch = match env.storage().temporary().get(&key) {
+            Some(g) => g,
+            None => {
+                // Auto-create match for P2P WebRTC flow (first player to submit)
+                let new_match = GameMatch {
+                    player1: player.clone(),
+                    player2: player.clone(), // placeholder until second player submits
+                    player1_points: 0,
+                    player2_points: 0,
+                    status: MatchStatus::ProofPhase,
+                    created_ledger: env.ledger().sequence(),
+                    p1_proof_submitted: false,
+                    p2_proof_submitted: false,
+                    winner: None,
+                };
+                new_match
+            }
+        };
 
         if game.status == MatchStatus::Resolved || game.status == MatchStatus::Forfeit {
             return Err(Error::MatchAlreadyEnded);
@@ -361,7 +374,7 @@ impl ZkombatContract {
             _ => return Err(Error::VerificationFailed),
         }
 
-        // Transition to proof phase on first submission
+        // Transition to proof phase on first submission (for create_match flow)
         if game.status == MatchStatus::Active {
             game.status = MatchStatus::ProofPhase;
         }
@@ -384,10 +397,9 @@ impl ZkombatContract {
             env.storage()
                 .temporary()
                 .extend_ttl(&proof_key, MATCH_TTL_LEDGERS, MATCH_TTL_LEDGERS);
-        } else if player == game.player2 {
-            if game.p2_proof_submitted {
-                return Err(Error::ProofAlreadySubmitted);
-            }
+        } else if !game.p2_proof_submitted && player != game.player1 {
+            // Second player joining this session — slot them in as player2
+            game.player2 = player.clone();
             game.p2_proof_submitted = true;
             let proof_key = DataKey::P2Proof(session_id);
             env.storage().temporary().set(&proof_key, &submission);
@@ -395,7 +407,7 @@ impl ZkombatContract {
                 .temporary()
                 .extend_ttl(&proof_key, MATCH_TTL_LEDGERS, MATCH_TTL_LEDGERS);
         } else {
-            return Err(Error::NotPlayer);
+            return Err(Error::ProofAlreadySubmitted);
         }
 
         // If both proofs are in, resolve the match
