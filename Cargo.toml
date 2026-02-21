@@ -8,6 +8,8 @@ members = [
   "contracts/number-guess",
   "contracts/dice-duel",
   "contracts/zkombat",
+  "contracts/contract-types",
+  "contracts/circom-groth16-verifier",
 ]
 
 [workspace.dependencies]

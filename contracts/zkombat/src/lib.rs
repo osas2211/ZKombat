@@ -5,14 +5,15 @@
 //! A 1v1 real-time fighting game on Stellar that uses zero-knowledge proofs
 //! as a trustless anti-cheat system. Players fight off-chain via WebRTC,
 //! then each generates a ZK proof attesting to fair play. Both proofs are
-//! verified on-chain through an UltraHonk verifier contract using
-//! Protocol 25's BN254 host functions.
+//! verified on-chain through a Groth16 verifier contract (Circom/BN254)
+//! using Protocol 25's native BN254 host functions.
 //!
 //! **Game Hub Integration:**
 //! Calls `start_game` when both players join and `end_game` when the match resolves.
 
 use soroban_sdk::{
     contract, contractclient, contracterror, contractimpl, contracttype,
+    crypto::bn254::{Bn254G1Affine, Bn254G2Affine, Fr},
     vec, Address, Bytes, BytesN, Env, IntoVal, Vec,
 };
 
@@ -36,12 +37,31 @@ pub trait GameHub {
 }
 
 // ============================================================================
-// UltraHonk Verifier Interface (cross-contract call)
+// Groth16 Verifier Interface (cross-contract call)
 // ============================================================================
 
+/// Groth16 proof composed of BN254 curve points.
+#[derive(Clone)]
+#[contracttype]
+pub struct Groth16Proof {
+    pub a: Bn254G1Affine,
+    pub b: Bn254G2Affine,
+    pub c: Bn254G1Affine,
+}
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum Groth16Error {
+    InvalidProof = 100,
+    MalformedPublicInputs = 101,
+    MalformedProof = 102,
+    NotInitialized = 103,
+}
+
 #[contractclient(name = "VerifierClient")]
-pub trait UltraHonkVerifier {
-    fn verify_proof(env: Env, public_inputs: Bytes, proof_bytes: Bytes);
+pub trait Groth16Verifier {
+    fn verify(env: Env, proof: Groth16Proof, public_inputs: Vec<Fr>) -> Result<bool, Groth16Error>;
 }
 
 // ============================================================================
@@ -86,7 +106,7 @@ pub struct ProofSubmission {
     pub my_final_health: u32,
     pub opponent_final_health: u32,
     pub total_damage_dealt: u32,
-    pub i_won: bool,
+    pub i_won: u32, // 0=lost, 1=won, 2=draw
 }
 
 #[contracttype]
@@ -272,12 +292,11 @@ impl ZkombatContract {
         session_id: u32,
         player: Address,
         proof_bytes: Bytes,
-        public_inputs: Bytes,
         input_hash: BytesN<32>,
         my_final_health: u32,
         opponent_final_health: u32,
         total_damage_dealt: u32,
-        i_won: bool,
+        i_won: u32,
     ) -> Result<(), Error> {
         player.require_auth();
 
@@ -292,7 +311,44 @@ impl ZkombatContract {
             return Err(Error::MatchAlreadyEnded);
         }
 
-        // Verify ZK proof via cross-contract call to UltraHonk verifier
+        // Parse 256-byte proof into Groth16Proof (A:64 || B:128 || C:64)
+        if proof_bytes.len() != 256 {
+            return Err(Error::VerificationFailed);
+        }
+        let proof = Groth16Proof {
+            a: Bn254G1Affine::from_bytes(
+                proof_bytes.slice(0..64).try_into().map_err(|_| Error::VerificationFailed)?,
+            ),
+            b: Bn254G2Affine::from_bytes(
+                proof_bytes.slice(64..192).try_into().map_err(|_| Error::VerificationFailed)?,
+            ),
+            c: Bn254G1Affine::from_bytes(
+                proof_bytes.slice(192..256).try_into().map_err(|_| Error::VerificationFailed)?,
+            ),
+        };
+
+        // Build public inputs: [input_log_hash, my_final_health, opp_final_health, i_won]
+        let mut pub_inputs: Vec<Fr> = Vec::new(&env);
+
+        // input_hash is already a 32-byte field element
+        pub_inputs.push_back(Fr::from_bytes(input_hash.clone()));
+
+        // Health values as 32-byte big-endian field elements
+        let mut health_buf = [0u8; 32];
+        health_buf[31] = (my_final_health & 0xFF) as u8;
+        health_buf[30] = ((my_final_health >> 8) & 0xFF) as u8;
+        pub_inputs.push_back(Fr::from_bytes(BytesN::from_array(&env, &health_buf)));
+
+        let mut opp_buf = [0u8; 32];
+        opp_buf[31] = (opponent_final_health & 0xFF) as u8;
+        opp_buf[30] = ((opponent_final_health >> 8) & 0xFF) as u8;
+        pub_inputs.push_back(Fr::from_bytes(BytesN::from_array(&env, &opp_buf)));
+
+        let mut won_buf = [0u8; 32];
+        won_buf[31] = (i_won & 0xFF) as u8;
+        pub_inputs.push_back(Fr::from_bytes(BytesN::from_array(&env, &won_buf)));
+
+        // Verify Groth16 proof via cross-contract call
         let verifier_addr: Address = env
             .storage()
             .instance()
@@ -300,8 +356,10 @@ impl ZkombatContract {
             .ok_or(Error::VerifierNotSet)?;
         let verifier = VerifierClient::new(&env, &verifier_addr);
 
-        // verify_proof panics on invalid proof, which rolls back this tx
-        verifier.verify_proof(&public_inputs, &proof_bytes);
+        match verifier.try_verify(&proof, &pub_inputs) {
+            Ok(Ok(true)) => {}
+            _ => return Err(Error::VerificationFailed),
+        }
 
         // Transition to proof phase on first submission
         if game.status == MatchStatus::Active {

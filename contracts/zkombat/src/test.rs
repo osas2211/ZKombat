@@ -1,8 +1,9 @@
 #![cfg(test)]
 
-use crate::{Error, MatchStatus, PointConfig, ZkombatContract, ZkombatContractClient};
+use crate::{Error, Groth16Error, Groth16Proof, MatchStatus, PointConfig, ZkombatContract, ZkombatContractClient};
+use soroban_sdk::crypto::bn254::Fr;
 use soroban_sdk::testutils::{Address as _, Ledger as _};
-use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env};
+use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env, Vec};
 
 // ============================================================================
 // Mock GameHub
@@ -30,7 +31,7 @@ impl MockGameHub {
 }
 
 // ============================================================================
-// Mock Verifier (always accepts proofs)
+// Mock Groth16 Verifier (always accepts proofs)
 // ============================================================================
 
 #[contract]
@@ -38,22 +39,12 @@ pub struct MockVerifier;
 
 #[contractimpl]
 impl MockVerifier {
-    pub fn verify_proof(_env: Env, _public_inputs: Bytes, _proof_bytes: Bytes) {
-        // Mock: always succeeds (doesn't panic)
-    }
-}
-
-// ============================================================================
-// Mock Verifier that rejects proofs
-// ============================================================================
-
-#[contract]
-pub struct RejectingVerifier;
-
-#[contractimpl]
-impl RejectingVerifier {
-    pub fn verify_proof(_env: Env, _public_inputs: Bytes, _proof_bytes: Bytes) {
-        panic!("Invalid proof");
+    pub fn verify(
+        _env: Env,
+        _proof: Groth16Proof,
+        _public_inputs: Vec<Fr>,
+    ) -> Result<bool, Groth16Error> {
+        Ok(true)
     }
 }
 
@@ -95,11 +86,7 @@ fn setup_test() -> (
 }
 
 fn dummy_proof_bytes(env: &Env) -> Bytes {
-    Bytes::from_array(env, &[0u8; 32])
-}
-
-fn dummy_public_inputs(env: &Env) -> Bytes {
-    Bytes::from_array(env, &[0u8; 32])
+    Bytes::from_array(env, &[0u8; 256]) // 256 bytes: A(64) + B(128) + C(64)
 }
 
 fn dummy_input_hash(env: &Env) -> BytesN<32> {
@@ -157,12 +144,11 @@ fn test_full_match_flow_p1_wins() {
         &1u32,
         &player1,
         &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
         &dummy_input_hash(&env),
         &60u32,
         &0u32,
         &100u32,
-        &true,
+        &1u32, // won
     );
 
     let game = client.get_match(&1u32);
@@ -175,12 +161,11 @@ fn test_full_match_flow_p1_wins() {
         &1u32,
         &player2,
         &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
         &dummy_input_hash(&env),
         &0u32,
         &60u32,
         &40u32,
-        &false,
+        &0u32, // lost
     );
 
     let game = client.get_match(&1u32);
@@ -208,28 +193,14 @@ fn test_full_match_flow_p2_wins() {
 
     // Player 1: lost with 0 health
     client.submit_proof(
-        &1u32,
-        &player1,
-        &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
-        &dummy_input_hash(&env),
-        &0u32,
-        &80u32,
-        &20u32,
-        &false,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &80u32, &20u32, &0u32,
     );
 
     // Player 2: won with 80 health
     client.submit_proof(
-        &1u32,
-        &player2,
-        &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
-        &dummy_input_hash(&env),
-        &80u32,
-        &0u32,
-        &100u32,
-        &true,
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &80u32, &0u32, &100u32, &1u32,
     );
 
     let game = client.get_match(&1u32);
@@ -245,27 +216,13 @@ fn test_draw() {
 
     // Both end with 40 health
     client.submit_proof(
-        &1u32,
-        &player1,
-        &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
-        &dummy_input_hash(&env),
-        &40u32,
-        &40u32,
-        &60u32,
-        &false,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &40u32, &40u32, &60u32, &2u32, // draw
     );
 
     client.submit_proof(
-        &1u32,
-        &player2,
-        &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
-        &dummy_input_hash(&env),
-        &40u32,
-        &40u32,
-        &60u32,
-        &false,
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &40u32, &40u32, &60u32, &2u32, // draw
     );
 
     let game = client.get_match(&1u32);
@@ -289,27 +246,13 @@ fn test_perfect_win_bonus() {
 
     // Perfect win: player1 at 100 health (untouched)
     client.submit_proof(
-        &1u32,
-        &player1,
-        &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
-        &dummy_input_hash(&env),
-        &100u32, // perfect - full health
-        &0u32,
-        &100u32,
-        &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &100u32, &0u32, &100u32, &1u32,
     );
 
     client.submit_proof(
-        &1u32,
-        &player2,
-        &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
-        &dummy_input_hash(&env),
-        &0u32,
-        &100u32,
-        &0u32,
-        &false,
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &100u32, &0u32, &0u32,
     );
 
     let stats = client.get_player_stats(&player1);
@@ -326,27 +269,13 @@ fn test_comeback_win_bonus() {
 
     // Comeback win: player1 at 20 health (barely survived)
     client.submit_proof(
-        &1u32,
-        &player1,
-        &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
-        &dummy_input_hash(&env),
-        &20u32, // comeback threshold
-        &0u32,
-        &100u32,
-        &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &20u32, &0u32, &100u32, &1u32,
     );
 
     client.submit_proof(
-        &1u32,
-        &player2,
-        &dummy_proof_bytes(&env),
-        &dummy_public_inputs(&env),
-        &dummy_input_hash(&env),
-        &0u32,
-        &20u32,
-        &80u32,
-        &false,
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &20u32, &80u32, &0u32,
     );
 
     let stats = client.get_player_stats(&player1);
@@ -364,27 +293,13 @@ fn test_win_streak_bonus() {
         client.create_match(&session, &player1, &player2, &100_0000000, &100_0000000);
 
         client.submit_proof(
-            &session,
-            &player1,
-            &dummy_proof_bytes(&env),
-            &dummy_public_inputs(&env),
-            &dummy_input_hash(&env),
-            &60u32,
-            &0u32,
-            &100u32,
-            &true,
+            &session, &player1, &dummy_proof_bytes(&env),
+            &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
         );
 
         client.submit_proof(
-            &session,
-            &player2,
-            &dummy_proof_bytes(&env),
-            &dummy_public_inputs(&env),
-            &dummy_input_hash(&env),
-            &0u32,
-            &60u32,
-            &40u32,
-            &false,
+            &session, &player2, &dummy_proof_bytes(&env),
+            &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
         );
     }
 
@@ -407,12 +322,12 @@ fn test_streak_resets_on_loss() {
     for session in 1u32..=2 {
         client.create_match(&session, &player1, &player2, &100_0000000, &100_0000000);
         client.submit_proof(
-            &session, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-            &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+            &session, &player1, &dummy_proof_bytes(&env),
+            &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
         );
         client.submit_proof(
-            &session, &player2, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-            &dummy_input_hash(&env), &0u32, &60u32, &40u32, &false,
+            &session, &player2, &dummy_proof_bytes(&env),
+            &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
         );
     }
 
@@ -422,12 +337,12 @@ fn test_streak_resets_on_loss() {
     // Lose match 3
     client.create_match(&3u32, &player1, &player2, &100_0000000, &100_0000000);
     client.submit_proof(
-        &3u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &false,
+        &3u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
     );
     client.submit_proof(
-        &3u32, &player2, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &3u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
 
     let stats = client.get_player_stats(&player1);
@@ -454,13 +369,13 @@ fn test_cannot_submit_proof_twice() {
     client.create_match(&1u32, &player1, &player2, &100_0000000, &100_0000000);
 
     client.submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
 
     let result = client.try_submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
     assert_zkombat_error(&result, Error::ProofAlreadySubmitted);
 }
@@ -473,8 +388,8 @@ fn test_non_player_cannot_submit() {
     client.create_match(&1u32, &player1, &player2, &100_0000000, &100_0000000);
 
     let result = client.try_submit_proof(
-        &1u32, &outsider, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &outsider, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
     assert_zkombat_error(&result, Error::NotPlayer);
 }
@@ -487,18 +402,18 @@ fn test_cannot_submit_to_resolved_match() {
 
     // Resolve the match
     client.submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
     client.submit_proof(
-        &1u32, &player2, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &false,
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
     );
 
     // Try submitting again
     let result = client.try_submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
     assert_zkombat_error(&result, Error::MatchAlreadyEnded);
 }
@@ -523,8 +438,8 @@ fn test_forfeit_after_timeout() {
 
     // Player 1 submits proof
     client.submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
 
     // Advance ledger past timeout
@@ -558,8 +473,8 @@ fn test_cannot_forfeit_before_timeout() {
     client.create_match(&1u32, &player1, &player2, &100_0000000, &100_0000000);
 
     client.submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
 
     // Don't advance ledger
@@ -575,8 +490,8 @@ fn test_cannot_forfeit_if_not_submitted() {
 
     // Player 1 submits proof
     client.submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
 
     // Advance past timeout
@@ -617,16 +532,13 @@ fn test_cross_validation_agrees() {
 
     client.create_match(&1u32, &player1, &player2, &100_0000000, &100_0000000);
 
-    // P1: my_health=60, opp_health=0
-    // P2: my_health=0, opp_health=60
-    // Perfect agreement
     client.submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
     client.submit_proof(
-        &1u32, &player2, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &false,
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
     );
 
     let game = client.get_match(&1u32);
@@ -639,16 +551,13 @@ fn test_cross_validation_disagrees_uses_my_health() {
 
     client.create_match(&1u32, &player1, &player2, &100_0000000, &100_0000000);
 
-    // Disagreement: P1 says opp has 20 health, P2 says they have 40
-    // But each player's ZK proof validates their OWN health calc
-    // So we trust my_final_health from each player
     client.submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &20u32, &80u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &20u32, &80u32, &1u32,
     );
     client.submit_proof(
-        &1u32, &player2, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &40u32, &50u32, &60u32, &false,
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &40u32, &50u32, &60u32, &0u32,
     );
 
     let game = client.get_match(&1u32);
@@ -667,18 +576,17 @@ fn test_leaderboard_updates() {
     client.create_match(&1u32, &player1, &player2, &100_0000000, &100_0000000);
 
     client.submit_proof(
-        &1u32, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &1u32, &player1, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
     client.submit_proof(
-        &1u32, &player2, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &false,
+        &1u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
     );
 
     let lb = client.get_leaderboard();
     assert!(lb.len() > 0);
 
-    // Player1 should be ranked higher (more points)
     let first = lb.get(0).unwrap();
     assert_eq!(first.player, player1);
 }
@@ -692,28 +600,27 @@ fn test_leaderboard_sorted() {
     for session in 1u32..=2 {
         client.create_match(&session, &player1, &player2, &100_0000000, &100_0000000);
         client.submit_proof(
-            &session, &player1, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-            &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+            &session, &player1, &dummy_proof_bytes(&env),
+            &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
         );
         client.submit_proof(
-            &session, &player2, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-            &dummy_input_hash(&env), &0u32, &60u32, &40u32, &false,
+            &session, &player2, &dummy_proof_bytes(&env),
+            &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
         );
     }
 
     // Player3 wins 1 match
     client.create_match(&3u32, &player3, &player2, &100_0000000, &100_0000000);
     client.submit_proof(
-        &3u32, &player3, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &true,
+        &3u32, &player3, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &60u32, &0u32, &100u32, &1u32,
     );
     client.submit_proof(
-        &3u32, &player2, &dummy_proof_bytes(&env), &dummy_public_inputs(&env),
-        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &false,
+        &3u32, &player2, &dummy_proof_bytes(&env),
+        &dummy_input_hash(&env), &0u32, &60u32, &40u32, &0u32,
     );
 
     let lb = client.get_leaderboard();
-    // Player1 has more points (2 wins) than Player3 (1 win)
     let first = lb.get(0).unwrap();
     assert_eq!(first.player, player1);
 }
