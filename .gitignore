@@ -3,6 +3,8 @@ test_snapshots/
 # Build artifacts
 target/
 *.wasm
+# But allow the frontend's circuit WASM (needed for ZK proof generation in browser)
+!zkombat-frontend/public/zkombat-circuit.wasm
 
 powersOfTau28_hez_final_17.ptau
 
@@ -41,9 +43,9 @@ circuits/*/test_input.json
 circuits/*/proof.json
 circuits/*/public.json
 
-# Large ZK files in frontend public (tracked via LFS or downloaded)
-zkombat-frontend/public/*.zkey
-zkombat-frontend/public/*-circuit.wasm
+# Large ZK files in frontend public — un-ignore so they deploy to Vercel
+!zkombat-frontend/public/*.zkey
+!zkombat-frontend/public/zkombat-circuit.wasm
 
 # IDE
 .vscode/
