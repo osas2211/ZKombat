@@ -1,9 +1,6 @@
 [build]
-builder = "nixpacks"
-
-[build.nixpacks]
-installCmd = "echo 'No dependencies to install'"
-buildCmd = "echo 'No build step needed'"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "bun run index.ts"
