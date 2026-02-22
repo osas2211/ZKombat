@@ -16,7 +16,7 @@ import type { GameResult } from "../game/engine/types"
 import "./PlayPage.css"
 
 const SIGNALING_URL =
-  import.meta.env.VITE_SIGNALING_URL || "ws://localhost:3001"
+  import.meta.env.VITE_SIGNALING_URL || "wss://zkombat-production.up.railway.app"
 const zkombatService = new ZkombatService(ZKOMBAT_CONTRACT)
 
 type PlayPhase =
@@ -33,7 +33,8 @@ type PlayPhase =
 
 export function PlayPage() {
   const navigate = useNavigate()
-  const { publicKey, isConnected, getContractSigner, connect, isConnecting } = useWalletStandalone()
+  const { publicKey, isConnected, getContractSigner, connect, isConnecting } =
+    useWalletStandalone()
   const {
     connectionState,
     roomId,
@@ -76,7 +77,12 @@ export function PlayPage() {
         setPhase("character-select")
         break
       case "disconnected":
-        if (phase !== "ready" && phase !== "fighting" && !phase.includes("proof") && phase !== "match-result") {
+        if (
+          phase !== "ready" &&
+          phase !== "fighting" &&
+          !phase.includes("proof") &&
+          phase !== "match-result"
+        ) {
           setPhase("lobby")
         }
         break
@@ -89,7 +95,9 @@ export function PlayPage() {
       await navigator.clipboard.writeText(roomId)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   const handleCharacterComplete = useCallback(
@@ -113,81 +121,110 @@ export function PlayPage() {
   }
 
   /* -- Handle game end: start ZK proof generation -- */
-  const handleGameEnd = useCallback(async (result: GameResult, p1Health: number, p2Health: number) => {
-    setMatchResult(result)
-    healthRef.current = { p1: p1Health, p2: p2Health }
-    recorderRef.current.stop()
+  const handleGameEnd = useCallback(
+    async (result: GameResult, p1Health: number, p2Health: number) => {
+      setMatchResult(result)
+      healthRef.current = { p1: p1Health, p2: p2Health }
+      recorderRef.current.stop()
 
-    setPhase("generating-proof")
-    setProofStatus("Generating anti-cheat proof...")
+      setPhase("generating-proof")
+      setProofStatus("Generating anti-cheat proof...")
 
-    try {
-      // Initialize proof generator if needed
-      if (!proofGenRef.current) {
-        proofGenRef.current = new ProofGenerator()
-        setProofStatus("Loading ZK circuit...")
-        await proofGenRef.current.init()
-      }
-
-      setProofStatus("Computing witness & generating proof...")
-      const inputs = recorderRef.current.getInputs()
-      const numValid = recorderRef.current.getValidCount()
-
-      // From local player's perspective
-      const myHealth = isHost ? p1Health : p2Health
-      const oppHealth = isHost ? p2Health : p1Health
-
-      const proof = await proofGenRef.current.generateProof(inputs, numValid, myHealth, oppHealth)
-
-      console.log('[PlayPage] ZK proof generated:', {
-        proofSize: proof.proofBytes.length,
-        publicInputs: proof.publicInputs,
-        submission: proof.submission,
-      })
-
-      // Try on-chain proof submission if wallet is connected and match exists
-      console.log('[PlayPage] Submission check:', { isConnected, publicKey, sessionId: sessionIdRef.current })
-      if (isConnected && publicKey && sessionIdRef.current !== null) {
-        setProofStatus("Preparing account...")
-        setPhase("submitting-proof")
-        try {
-          // Ensure player's account exists on testnet (fund via Friendbot if needed)
-          await ensureTestnetAccountFunded(publicKey)
-          setProofStatus("Submitting proof to Stellar...")
-          console.log('[PlayPage] Submitting proof on-chain, sessionId:', sessionIdRef.current, 'player:', publicKey)
-          const signer = getContractSigner()
-          const { txHash: hash } = await zkombatService.submitProof(
-            sessionIdRef.current,
-            publicKey,
-            proof.proofBytes,
-            proof.submission.input_hash,
-            proof.submission.my_final_health,
-            proof.submission.opponent_final_health,
-            proof.submission.total_damage_dealt,
-            proof.submission.i_won,
-            signer,
-          )
-          console.log('[PlayPage] Proof submitted successfully, txHash:', hash)
-          if (hash) setTxHash(hash)
-          setProofStatus("Proof verified on-chain!")
-        } catch (chainErr) {
-          console.error('[PlayPage] On-chain submission failed:', chainErr)
-          const errMsg = chainErr instanceof Error ? chainErr.message : String(chainErr)
-          setProofStatus(`On-chain submission failed: ${errMsg.slice(0, 120)}`)
+      try {
+        // Initialize proof generator if needed
+        if (!proofGenRef.current) {
+          proofGenRef.current = new ProofGenerator()
+          setProofStatus("Loading ZK circuit...")
+          await proofGenRef.current.init()
         }
-      } else {
-        console.warn('[PlayPage] Skipping on-chain submission:', { isConnected, publicKey, sessionId: sessionIdRef.current })
-        setProofStatus("Proof generated successfully")
-      }
 
-      setPhase("match-result")
-    } catch (err) {
-      console.error('[PlayPage] Proof generation failed:', err)
-      setProofStatus(`Proof generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
-      // Still show result even if proof fails
-      setTimeout(() => setPhase("match-result"), 3000)
-    }
-  }, [isHost, isConnected, publicKey, getContractSigner])
+        setProofStatus("Computing witness & generating proof...")
+        const inputs = recorderRef.current.getInputs()
+        const numValid = recorderRef.current.getValidCount()
+
+        // From local player's perspective
+        const myHealth = isHost ? p1Health : p2Health
+        const oppHealth = isHost ? p2Health : p1Health
+
+        const proof = await proofGenRef.current.generateProof(
+          inputs,
+          numValid,
+          myHealth,
+          oppHealth,
+        )
+
+        console.log("[PlayPage] ZK proof generated:", {
+          proofSize: proof.proofBytes.length,
+          publicInputs: proof.publicInputs,
+          submission: proof.submission,
+        })
+
+        // Try on-chain proof submission if wallet is connected and match exists
+        console.log("[PlayPage] Submission check:", {
+          isConnected,
+          publicKey,
+          sessionId: sessionIdRef.current,
+        })
+        if (isConnected && publicKey && sessionIdRef.current !== null) {
+          setProofStatus("Preparing account...")
+          setPhase("submitting-proof")
+          try {
+            // Ensure player's account exists on testnet (fund via Friendbot if needed)
+            await ensureTestnetAccountFunded(publicKey)
+            setProofStatus("Submitting proof to Stellar...")
+            console.log(
+              "[PlayPage] Submitting proof on-chain, sessionId:",
+              sessionIdRef.current,
+              "player:",
+              publicKey,
+            )
+            const signer = getContractSigner()
+            const { txHash: hash } = await zkombatService.submitProof(
+              sessionIdRef.current,
+              publicKey,
+              proof.proofBytes,
+              proof.submission.input_hash,
+              proof.submission.my_final_health,
+              proof.submission.opponent_final_health,
+              proof.submission.total_damage_dealt,
+              proof.submission.i_won,
+              signer,
+            )
+            console.log(
+              "[PlayPage] Proof submitted successfully, txHash:",
+              hash,
+            )
+            if (hash) setTxHash(hash)
+            setProofStatus("Proof verified on-chain!")
+          } catch (chainErr) {
+            console.error("[PlayPage] On-chain submission failed:", chainErr)
+            const errMsg =
+              chainErr instanceof Error ? chainErr.message : String(chainErr)
+            setProofStatus(
+              `On-chain submission failed: ${errMsg.slice(0, 120)}`,
+            )
+          }
+        } else {
+          console.warn("[PlayPage] Skipping on-chain submission:", {
+            isConnected,
+            publicKey,
+            sessionId: sessionIdRef.current,
+          })
+          setProofStatus("Proof generated successfully")
+        }
+
+        setPhase("match-result")
+      } catch (err) {
+        console.error("[PlayPage] Proof generation failed:", err)
+        setProofStatus(
+          `Proof generation failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+        )
+        // Still show result even if proof fails
+        setTimeout(() => setPhase("match-result"), 3000)
+      }
+    },
+    [isHost, isConnected, publicKey, getContractSigner],
+  )
 
   /* -- Auto-transition: ready -> fighting -- */
   useEffect(() => {
@@ -207,13 +244,18 @@ export function PlayPage() {
 
   const playerSide = isHost ? "left" : "right"
 
-  const resultText = matchResult === "tie"
-    ? "Draw!"
-    : matchResult === "player1"
-      ? (isHost ? "You Win!" : "You Lose!")
-      : matchResult === "player2"
-        ? (isHost ? "You Lose!" : "You Win!")
-        : ""
+  const resultText =
+    matchResult === "tie"
+      ? "Draw!"
+      : matchResult === "player1"
+        ? isHost
+          ? "You Win!"
+          : "You Lose!"
+        : matchResult === "player2"
+          ? isHost
+            ? "You Lose!"
+            : "You Win!"
+          : ""
 
   return (
     <div className="play-page relative min-h-screen overflow-x-hidden bg-[#07080c] text-white">
@@ -233,7 +275,6 @@ export function PlayPage() {
 
       {/* Content */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-5 pt-20 pb-10">
-
         {/* -- LOBBY -- */}
         {phase === "lobby" && (
           <div className="play-lobby">
@@ -243,7 +284,10 @@ export function PlayPage() {
                   <Wallet className="h-5 w-5" />
                 </div>
                 <h2 className="play-lobby-title">Connect Wallet</h2>
-                <p className="play-lobby-sub" style={{ marginBottom: "1.5rem" }}>
+                <p
+                  className="play-lobby-sub"
+                  style={{ marginBottom: "1.5rem" }}
+                >
                   Connect your Stellar wallet to start playing
                 </p>
                 <button
@@ -258,12 +302,17 @@ export function PlayPage() {
               <>
                 <div className="play-lobby-header">
                   <h2 className="play-lobby-title">Match Lobby</h2>
-                  <p className="play-lobby-sub">Create a room or join with a code</p>
+                  <p className="play-lobby-sub">
+                    Create a room or join with a code
+                  </p>
                 </div>
 
                 {error && <div className="play-error">{error}</div>}
 
-                <button className="play-btn-primary" onClick={() => createRoom()}>
+                <button
+                  className="play-btn-primary"
+                  onClick={() => createRoom()}
+                >
                   Create Room
                 </button>
 
@@ -281,12 +330,15 @@ export function PlayPage() {
                     onChange={(e) => setJoinInput(e.target.value.toUpperCase())}
                     maxLength={6}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && joinInput.trim()) joinRoom(joinInput.trim())
+                      if (e.key === "Enter" && joinInput.trim())
+                        joinRoom(joinInput.trim())
                     }}
                   />
                   <button
                     className="play-btn-join"
-                    onClick={() => joinInput.trim() && joinRoom(joinInput.trim())}
+                    onClick={() =>
+                      joinInput.trim() && joinRoom(joinInput.trim())
+                    }
                     disabled={!joinInput.trim()}
                   >
                     Join
@@ -302,21 +354,29 @@ export function PlayPage() {
           <div className="play-lobby">
             <div className="play-waiting">
               <span className="play-waiting-badge">Room Created</span>
-              <p className="play-waiting-label">Share this code with your opponent</p>
+              <p className="play-waiting-label">
+                Share this code with your opponent
+              </p>
               <div className="play-waiting-code">{roomId}</div>
 
               <button onClick={handleCopy} className="play-copy-btn">
                 {copied ? (
-                  <><Check className="h-3 w-3" /> Copied</>
+                  <>
+                    <Check className="h-3 w-3" /> Copied
+                  </>
                 ) : (
-                  <><Copy className="h-3 w-3" /> Copy code</>
+                  <>
+                    <Copy className="h-3 w-3" /> Copy code
+                  </>
                 )}
               </button>
 
               <p className="play-waiting-status">
                 Waiting for opponent
                 <span className="play-dots">
-                  <span>.</span><span>.</span><span>.</span>
+                  <span>.</span>
+                  <span>.</span>
+                  <span>.</span>
                 </span>
               </p>
 
@@ -335,7 +395,9 @@ export function PlayPage() {
             <div className="play-connecting">
               <div className="play-spinner" />
               <h3 className="play-connecting-title">Connecting</h3>
-              <p className="play-connecting-sub">Establishing peer-to-peer connection</p>
+              <p className="play-connecting-sub">
+                Establishing peer-to-peer connection
+              </p>
             </div>
           </div>
         )}
@@ -352,7 +414,10 @@ export function PlayPage() {
                     alt={localChar.name}
                     style={{ border: "2px solid #00c8ff" }}
                   />
-                  <p className="play-ready-fighter-name" style={{ color: "#00c8ff" }}>
+                  <p
+                    className="play-ready-fighter-name"
+                    style={{ color: "#00c8ff" }}
+                  >
                     {localChar.name}
                   </p>
                   <p className="play-ready-fighter-label">You</p>
@@ -366,7 +431,10 @@ export function PlayPage() {
                     alt={remoteChar.name}
                     style={{ border: "2px solid #ff3264" }}
                   />
-                  <p className="play-ready-fighter-name" style={{ color: "#ff3264" }}>
+                  <p
+                    className="play-ready-fighter-name"
+                    style={{ color: "#ff3264" }}
+                  >
                     {remoteChar.name}
                   </p>
                   <p className="play-ready-fighter-label">Opponent</p>
@@ -378,7 +446,9 @@ export function PlayPage() {
         )}
 
         {/* -- PROOF GENERATION / SUBMISSION -- */}
-        {(phase === "generating-proof" || phase === "submitting-proof" || phase === "waiting-opponent") && (
+        {(phase === "generating-proof" ||
+          phase === "submitting-proof" ||
+          phase === "waiting-opponent") && (
           <div className="play-lobby">
             <div className="play-connecting">
               <div className="play-spinner" />
@@ -396,13 +466,23 @@ export function PlayPage() {
         {phase === "match-result" && (
           <div className="play-lobby">
             <div className="play-waiting">
-              <h2 className="play-lobby-title" style={{ fontSize: "28px", marginBottom: "1rem" }}>
+              <h2
+                className="play-lobby-title"
+                style={{ fontSize: "28px", marginBottom: "1rem" }}
+              >
                 {resultText}
               </h2>
-              <p className="play-waiting-label" style={{ marginBottom: "0.5rem" }}>
-                P1 Health: {healthRef.current.p1} | P2 Health: {healthRef.current.p2}
+              <p
+                className="play-waiting-label"
+                style={{ marginBottom: "0.5rem" }}
+              >
+                P1 Health: {healthRef.current.p1} | P2 Health:{" "}
+                {healthRef.current.p2}
               </p>
-              <p className="play-waiting-label" style={{ fontSize: "10px", opacity: 0.5 }}>
+              <p
+                className="play-waiting-label"
+                style={{ fontSize: "10px", opacity: 0.5 }}
+              >
                 {proofStatus || "ZK proof generated"}
               </p>
 
@@ -424,12 +504,15 @@ export function PlayPage() {
               )}
 
               <div style={{ marginTop: "2rem", display: "flex", gap: "1rem" }}>
-                <button className="play-btn-primary" onClick={() => {
-                  setPhase("lobby")
-                  setMatchResult(null)
-                  setTxHash(null)
-                  recorderRef.current = new InputRecorder()
-                }}>
+                <button
+                  className="play-btn-primary"
+                  onClick={() => {
+                    setPhase("lobby")
+                    setMatchResult(null)
+                    setTxHash(null)
+                    recorderRef.current = new InputRecorder()
+                  }}
+                >
                   Play Again
                 </button>
                 <button className="play-btn-secondary" onClick={handleBack}>

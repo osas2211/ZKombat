@@ -60,6 +60,7 @@ const PORT = Number(process.env.PORT) || 3001
 
 Bun.serve({
   port: PORT,
+  hostname: '0.0.0.0',
 
   fetch(req, server) {
     // CORS preflight for health checks
