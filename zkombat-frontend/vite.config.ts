@@ -4,8 +4,8 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  // Load .env files from the parent directory (repo root)
-  envDir: '..',
+  // In local dev, load .env from repo root; on Vercel, env vars are injected directly
+  envDir: process.env.VERCEL ? '.' : '..',
   define: {
     global: 'globalThis',
     'process.env': {},

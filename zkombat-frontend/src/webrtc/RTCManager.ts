@@ -164,6 +164,7 @@ export class RTCManager {
       case 'room-joined':
         this._roomId = msg.roomId;
         this.setState('signaling');
+        this.cb.onRoomCreated?.(msg.roomId);
         // Guest waits for the host's offer
         this.createPeerConnection();
         break;

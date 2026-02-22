@@ -19,55 +19,21 @@ export async function signAndSendViaLaunchtube(
   // If tx is an AssembledTransaction, simulate and send
   if (typeof tx !== 'string' && 'simulate' in tx) {
     const simulated = await tx.simulate();
-    try {
-      return await simulated.signAndSend();
-    } catch (err: any) {
-      const errName = err?.name ?? '';
-      const errMessage = err instanceof Error ? err.message : String(err);
-      const isNoSignatureNeeded =
-        errName.includes('NoSignatureNeededError') ||
-        errMessage.includes('NoSignatureNeededError') ||
-        errMessage.includes('This is a read call') ||
-        errMessage.includes('requires no signature') ||
-        errMessage.includes('force: true');
+    const sent = await simulated.signAndSend({ force: true });
+    const hash = sent.sendTransactionResponse?.hash;
 
-      // Some contract bindings incorrectly classify state-changing methods as "read calls".
-      // In those cases, the SDK requires `force: true` to sign and send anyway.
-      if (isNoSignatureNeeded) {
-        try {
-          return await simulated.signAndSend({ force: true });
-        } catch (forceErr: any) {
-          const forceName = forceErr?.name ?? '';
-          const forceMessage = forceErr instanceof Error ? forceErr.message : String(forceErr);
-          const isStillReadOnly =
-            forceName.includes('NoSignatureNeededError') ||
-            forceMessage.includes('NoSignatureNeededError') ||
-            forceMessage.includes('This is a read call') ||
-            forceMessage.includes('requires no signature');
-
-          // If the SDK still says it's a read call, treat the simulation result as the final result.
-          if (isStillReadOnly) {
-            const simulatedResult =
-              (simulated as any).result ??
-              (simulated as any).simulationResult?.result ??
-              (simulated as any).returnValue ??
-              (tx as any).result;
-
-            return {
-              result: simulatedResult,
-              getTransactionResponse: undefined,
-            } as unknown as contract.SentTransaction<any>;
-          }
-
-          throw forceErr;
-        }
-      }
-
-      throw err;
+    // The SDK may not throw on failed transactions — check explicitly
+    const txResponse = sent.getTransactionResponse as Record<string, unknown> | undefined;
+    const status = txResponse?.status as string | undefined;
+    if (status === 'FAILED') {
+      console.error('[signAndSend] Transaction FAILED on-chain, hash:', hash);
+      throw new Error(`Transaction failed on-chain (hash: ${hash}). The contract execution trapped — likely a footprint mismatch from stale simulation.`);
     }
+
+    console.log('[signAndSend] Transaction confirmed, hash:', hash);
+    return sent;
   }
 
   // If tx is XDR string, it needs to be sent directly
-  // This is typically used for multi-sig flows where the transaction is already built
   throw new Error('Direct XDR submission not yet implemented. Use AssembledTransaction.signAndSend() instead.');
 }

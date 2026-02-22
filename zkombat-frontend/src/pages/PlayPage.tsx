@@ -146,6 +146,7 @@ export function PlayPage() {
       })
 
       // Try on-chain proof submission if wallet is connected and match exists
+      console.log('[PlayPage] Submission check:', { isConnected, publicKey, sessionId: sessionIdRef.current })
       if (isConnected && publicKey && sessionIdRef.current !== null) {
         setProofStatus("Preparing account...")
         setPhase("submitting-proof")
@@ -153,6 +154,7 @@ export function PlayPage() {
           // Ensure player's account exists on testnet (fund via Friendbot if needed)
           await ensureTestnetAccountFunded(publicKey)
           setProofStatus("Submitting proof to Stellar...")
+          console.log('[PlayPage] Submitting proof on-chain, sessionId:', sessionIdRef.current, 'player:', publicKey)
           const signer = getContractSigner()
           const { txHash: hash } = await zkombatService.submitProof(
             sessionIdRef.current,
@@ -165,13 +167,16 @@ export function PlayPage() {
             proof.submission.i_won,
             signer,
           )
+          console.log('[PlayPage] Proof submitted successfully, txHash:', hash)
           if (hash) setTxHash(hash)
           setProofStatus("Proof verified on-chain!")
         } catch (chainErr) {
-          console.warn('[PlayPage] On-chain submission failed (match may not exist on-chain):', chainErr)
-          setProofStatus("Proof generated successfully (off-chain)")
+          console.error('[PlayPage] On-chain submission failed:', chainErr)
+          const errMsg = chainErr instanceof Error ? chainErr.message : String(chainErr)
+          setProofStatus(`On-chain submission failed: ${errMsg.slice(0, 120)}`)
         }
       } else {
+        console.warn('[PlayPage] Skipping on-chain submission:', { isConnected, publicKey, sessionId: sessionIdRef.current })
         setProofStatus("Proof generated successfully")
       }
 

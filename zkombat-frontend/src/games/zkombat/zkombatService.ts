@@ -70,10 +70,13 @@ export class ZkombatService {
 
   async getLeaderboard(): Promise<LeaderboardEntry[]> {
     try {
+      console.log('[ZkombatService] Fetching leaderboard, contractId:', this.contractId)
       const tx = await this.baseClient.get_leaderboard();
       const result = await tx.simulate();
+      console.log('[ZkombatService] Leaderboard raw result:', result.result)
       return result.result;
-    } catch {
+    } catch (err) {
+      console.error('[ZkombatService] getLeaderboard failed:', err)
       return [];
     }
   }
@@ -293,8 +296,10 @@ export class ZkombatService {
     signer: Pick<contract.ClientOptions, 'signTransaction' | 'signAuthEntry'>,
     authTtlMinutes?: number
   ): Promise<{ result: any; txHash?: string }> {
-    const client = this.createSigningClient(playerAddress, signer);
-    const tx = await client.submit_proof({
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 6000; // wait for other player's tx to confirm
+
+    const args = {
       session_id: sessionId,
       player: playerAddress,
       proof_bytes: Buffer.from(proofBytes),
@@ -303,21 +308,43 @@ export class ZkombatService {
       opponent_final_health: opponentFinalHealth,
       total_damage_dealt: totalDamageDealt,
       i_won: iWon,
-    }, DEFAULT_METHOD_OPTIONS);
-
-    const validUntilLedgerSeq = authTtlMinutes
-      ? await calculateValidUntilLedger(RPC_URL, authTtlMinutes)
-      : await calculateValidUntilLedger(RPC_URL, DEFAULT_AUTH_TTL_MINUTES);
-
-    const sentTx = await signAndSendViaLaunchtube(
-      tx,
-      DEFAULT_METHOD_OPTIONS.timeoutInSeconds,
-      validUntilLedgerSeq
-    );
-    return {
-      result: sentTx.result,
-      txHash: sentTx.sendTransactionResponse?.hash,
     };
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        // Build a fresh client + tx each attempt so simulation sees latest state
+        const client = this.createSigningClient(playerAddress, signer);
+        const tx = await client.submit_proof(args, DEFAULT_METHOD_OPTIONS);
+
+        const validUntilLedgerSeq = authTtlMinutes
+          ? await calculateValidUntilLedger(RPC_URL, authTtlMinutes)
+          : await calculateValidUntilLedger(RPC_URL, DEFAULT_AUTH_TTL_MINUTES);
+
+        const sentTx = await signAndSendViaLaunchtube(
+          tx,
+          DEFAULT_METHOD_OPTIONS.timeoutInSeconds,
+          validUntilLedgerSeq
+        );
+
+        // submit_proof returns Result<(), Error> — guard the result parse
+        let result: any = null;
+        try { result = sentTx.result; } catch { /* void result parse — harmless */ }
+        return {
+          result,
+          txHash: sentTx.sendTransactionResponse?.hash,
+        };
+      } catch (err) {
+        console.warn(`[submitProof] Attempt ${attempt}/${MAX_RETRIES} failed:`, err);
+        if (attempt < MAX_RETRIES) {
+          console.log(`[submitProof] Retrying in ${RETRY_DELAY_MS / 1000}s (waiting for on-chain state to settle)...`);
+          await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    throw new Error('submitProof: max retries exceeded');
   }
 
   // ================================================================

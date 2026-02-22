@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+installCmd = "echo 'No dependencies to install'"
+buildCmd = "echo 'No build step needed'"
+
+[deploy]
+startCommand = "bun run index.ts"
