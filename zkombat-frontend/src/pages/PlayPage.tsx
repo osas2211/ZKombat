@@ -445,6 +445,8 @@ export function PlayPage() {
             rawMessage={rawMessage}
             onGameEnd={handleGameEnd}
             inputRecorder={recorderRef.current}
+            p1CharacterId={isHost ? localChar?.id : remoteChar?.id}
+            p2CharacterId={isHost ? remoteChar?.id : localChar?.id}
           />
         </div>
       )}

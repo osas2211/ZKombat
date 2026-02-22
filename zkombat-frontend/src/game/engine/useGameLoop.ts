@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import type { DataChannelMessage } from '../../webrtc/types'
 import { GameSprite } from './Sprite'
-import { Fighter, collides, PLAYER_CONFIG, ENEMY_CONFIG, PLAYER_HIT_FRAME, ENEMY_HIT_FRAME, STARTING_HEALTH, STARTING_STAMINA } from './Fighter'
+import { Fighter, collides, getP1Config, getP2Config, getHitFrame, STARTING_HEALTH, STARTING_STAMINA } from './Fighter'
 import { CANVAS_W, CANVAS_H, IMG } from './types'
 import type { LocalInput, RemoteInput, MoveDir, GameResult } from './types'
 import type { InputRecorder } from '../../zk/InputRecorder'
@@ -17,6 +17,10 @@ interface UseGameLoopOpts {
   rawMessage: DataChannelMessage | null
   onGameEnd?: (result: GameResult, p1Health: number, p2Health: number) => void
   inputRecorder?: InputRecorder | null
+  /** Character ID for P1 (left side) */
+  p1CharacterId?: string
+  /** Character ID for P2 (right side) */
+  p2CharacterId?: string
 }
 
 export interface GameHudState {
@@ -29,7 +33,7 @@ export interface GameHudState {
   isHost: boolean
 }
 
-export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder }: UseGameLoopOpts) {
+export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder, p1CharacterId, p2CharacterId }: UseGameLoopOpts) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   // Game objects
@@ -77,11 +81,17 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
     const bg = new GameSprite({ position: { x: 0, y: 0 }, imageSrc: `${IMG}/background.png` })
     const shop = new GameSprite({ position: { x: 600, y: 128 }, imageSrc: `${IMG}/shop.png`, scale: 2.75, framesMax: 6 })
 
-    // Fighters
-    const player = new Fighter(PLAYER_CONFIG)
-    const enemy = new Fighter(ENEMY_CONFIG)
+    // Fighters (use selected characters, fallback to defaults)
+    const player = new Fighter(getP1Config(p1CharacterId ?? 'samurai-mack'))
+    const enemy = new Fighter(getP2Config(p2CharacterId ?? 'kenji'))
+    const playerHitFrame = getHitFrame(p1CharacterId ?? 'samurai-mack')
+    const enemyHitFrame = getHitFrame(p2CharacterId ?? 'kenji')
     playerRef.current = player
     enemyRef.current = enemy
+
+    // Set initial facing: P1 faces right, P2 faces left
+    player.flipped = player.nativeFacing !== 'right'
+    enemy.flipped = enemy.nativeFacing !== 'left'
 
     // End game
     function endGame() {
@@ -121,8 +131,20 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
       shop.update(ctx)
       ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'
       ctx.fillRect(0, 0, CANVAS_W, CANVAS_H)
+
+      // Per-frame facing: each fighter faces their opponent
+      const playerFacesRight = player.position.x < enemy.position.x
+      player.flipped = (playerFacesRight && player.nativeFacing === 'left') || (!playerFacesRight && player.nativeFacing === 'right')
+
+      const enemyFacesRight = enemy.position.x < player.position.x
+      enemy.flipped = (enemyFacesRight && enemy.nativeFacing === 'left') || (!enemyFacesRight && enemy.nativeFacing === 'right')
+
       player.update(ctx)
       enemy.update(ctx)
+
+      // Boundary clamping: keep fighters on screen
+      player.position.x = Math.max(0, Math.min(player.position.x, CANVAS_W - 50))
+      enemy.position.x = Math.max(0, Math.min(enemy.position.x, CANVAS_W - 50))
 
       // Resolve directions
       const li = localRef.current
@@ -168,7 +190,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
       else if (enemy.velocity.y > 0) enemy.switchSprite('fall')
 
       // Collision: player -> enemy
-      if (collides(player, enemy) && player.isAttacking && player.framesCurrent === PLAYER_HIT_FRAME) {
+      if (collides(player, enemy) && player.isAttacking && player.framesCurrent === playerHitFrame) {
         const wasBlocking = enemy.isBlocking
         enemy.takeHit()
         player.isAttacking = false
@@ -180,7 +202,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
         const isMyAttack = isHostRef.current
         recorderRef.current?.record(ACTION_PUNCH, isMyAttack, true, wasBlocking)
       }
-      if (player.isAttacking && player.framesCurrent === PLAYER_HIT_FRAME) {
+      if (player.isAttacking && player.framesCurrent === playerHitFrame) {
         // Missed punch — record for ZK (single record per punch)
         const isMyMiss = isHostRef.current
         recorderRef.current?.record(ACTION_PUNCH, isMyMiss, false, false)
@@ -188,7 +210,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
       }
 
       // Collision: enemy -> player
-      if (collides(enemy, player) && enemy.isAttacking && enemy.framesCurrent === ENEMY_HIT_FRAME) {
+      if (collides(enemy, player) && enemy.isAttacking && enemy.framesCurrent === enemyHitFrame) {
         const wasBlocking = player.isBlocking
         player.takeHit()
         enemy.isAttacking = false
@@ -200,7 +222,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
         const isMyAttack = !isHostRef.current
         recorderRef.current?.record(ACTION_PUNCH, isMyAttack, true, wasBlocking)
       }
-      if (enemy.isAttacking && enemy.framesCurrent === ENEMY_HIT_FRAME) {
+      if (enemy.isAttacking && enemy.framesCurrent === enemyHitFrame) {
         // Missed punch — record for ZK (single record per punch)
         const isMyMiss = !isHostRef.current
         recorderRef.current?.record(ACTION_PUNCH, isMyMiss, false, false)

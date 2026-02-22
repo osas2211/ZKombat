@@ -10,10 +10,14 @@ interface FightingGameProps {
   rawMessage: DataChannelMessage | null
   onGameEnd?: (result: GameResult, p1Health: number, p2Health: number) => void
   inputRecorder?: InputRecorder | null
+  /** Character ID for P1 (left side) */
+  p1CharacterId?: string
+  /** Character ID for P2 (right side) */
+  p2CharacterId?: string
 }
 
-export function FightingGame({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder }: FightingGameProps) {
-  const { canvasRef, hud } = useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder })
+export function FightingGame({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder, p1CharacterId, p2CharacterId }: FightingGameProps) {
+  const { canvasRef, hud } = useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder, p1CharacterId, p2CharacterId })
 
   return (
     <div className="fighting-game">

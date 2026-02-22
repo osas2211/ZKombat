@@ -9,60 +9,20 @@ import "./CharacterSelect.css"
 export interface Character {
   id: string
   name: string
-  /** Small square thumbnail for the grid */
-  thumb: string
-  /** Larger portrait for the side panels */
+  /** Headshot image for grid thumbnails and portraits */
   portrait: string
 }
 
 const CHARACTERS: Character[] = [
   {
-    id: "shadow-blade",
-    name: "Shadow Blade",
-    thumb: "https://api.dicebear.com/9.x/adventurer/svg?seed=shadow-blade&backgroundColor=111827",
-    portrait: "https://api.dicebear.com/9.x/adventurer/svg?seed=shadow-blade&backgroundColor=transparent&scale=120",
+    id: "samurai-mack",
+    name: "Samurai Mack",
+    portrait: "/game/samuraiMack/samuraiMack-headshot.png",
   },
   {
-    id: "iron-fist",
-    name: "Iron Fist",
-    thumb: "https://api.dicebear.com/9.x/adventurer/svg?seed=iron-fist&backgroundColor=111827",
-    portrait: "https://api.dicebear.com/9.x/adventurer/svg?seed=iron-fist&backgroundColor=transparent&scale=120",
-  },
-  {
-    id: "storm-hawk",
-    name: "Storm Hawk",
-    thumb: "https://api.dicebear.com/9.x/adventurer/svg?seed=storm-hawk&backgroundColor=111827",
-    portrait: "https://api.dicebear.com/9.x/adventurer/svg?seed=storm-hawk&backgroundColor=transparent&scale=120",
-  },
-  {
-    id: "venom-strike",
-    name: "Venom Strike",
-    thumb: "https://api.dicebear.com/9.x/adventurer/svg?seed=venom-strike&backgroundColor=111827",
-    portrait: "https://api.dicebear.com/9.x/adventurer/svg?seed=venom-strike&backgroundColor=transparent&scale=120",
-  },
-  {
-    id: "frost-queen",
-    name: "Frost Queen",
-    thumb: "https://api.dicebear.com/9.x/adventurer/svg?seed=frost-queen&backgroundColor=111827",
-    portrait: "https://api.dicebear.com/9.x/adventurer/svg?seed=frost-queen&backgroundColor=transparent&scale=120",
-  },
-  {
-    id: "blaze-runner",
-    name: "Blaze Runner",
-    thumb: "https://api.dicebear.com/9.x/adventurer/svg?seed=blaze-runner&backgroundColor=111827",
-    portrait: "https://api.dicebear.com/9.x/adventurer/svg?seed=blaze-runner&backgroundColor=transparent&scale=120",
-  },
-  {
-    id: "cyber-wolf",
-    name: "Cyber Wolf",
-    thumb: "https://api.dicebear.com/9.x/adventurer/svg?seed=cyber-wolf&backgroundColor=111827",
-    portrait: "https://api.dicebear.com/9.x/adventurer/svg?seed=cyber-wolf&backgroundColor=transparent&scale=120",
-  },
-  {
-    id: "nova-knight",
-    name: "Nova Knight",
-    thumb: "https://api.dicebear.com/9.x/adventurer/svg?seed=nova-knight&backgroundColor=111827",
-    portrait: "https://api.dicebear.com/9.x/adventurer/svg?seed=nova-knight&backgroundColor=transparent&scale=120",
+    id: "kenji",
+    name: "Kenji",
+    portrait: "/game/kenji/kenji-headshot.png",
   },
 ]
 
@@ -255,7 +215,7 @@ export function CharacterSelect({
                 onClick={() => handleSelect(ch.id)}
                 disabled={localConfirmed}
               >
-                <img src={ch.thumb} alt={ch.name} />
+                <img src={ch.portrait} alt={ch.name} />
                 <span className="cs-cell-name">{ch.name}</span>
               </button>
             ))}

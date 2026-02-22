@@ -7,6 +7,8 @@ export const CANVAS_H = 576
 export const GRAVITY = 0.7
 export const IMG = '/game'
 
+export type Facing = 'left' | 'right'
+
 export type SpriteName = 'idle' | 'run' | 'jump' | 'fall' | 'attack1' | 'takeHit' | 'death'
 
 export interface SpriteOpts {
@@ -32,6 +34,7 @@ export interface FighterOpts {
   offset?: { x: number; y: number }
   sprites: Record<SpriteName, { imageSrc: string; framesMax: number }>
   attackBox: { offset: { x: number; y: number }; width: number; height: number }
+  nativeFacing: Facing
 }
 
 export type MoveDir = 'left' | 'right' | 'none'

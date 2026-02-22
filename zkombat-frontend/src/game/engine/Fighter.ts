@@ -1,6 +1,6 @@
 import { GameSprite } from './Sprite'
 import { CANVAS_H, GRAVITY, IMG } from './types'
-import type { FighterOpts, SpriteData, SpriteName } from './types'
+import type { Facing, FighterOpts, SpriteData, SpriteName } from './types'
 
 // ═══════════════════════════════════════════════════════
 // FIGHTER CLASS
@@ -30,9 +30,12 @@ export class Fighter extends GameSprite {
   stamina = STARTING_STAMINA
   sprites: Record<SpriteName, SpriteData>
   dead = false
+  nativeFacing: Facing
+  flipped = false
 
   constructor(o: FighterOpts) {
     super({ position: o.position, imageSrc: o.imageSrc, scale: o.scale, framesMax: o.framesMax, offset: o.offset })
+    this.nativeFacing = o.nativeFacing
     this.velocity = o.velocity
     this.attackBox = {
       position: { x: this.position.x, y: this.position.y },
@@ -49,12 +52,45 @@ export class Fighter extends GameSprite {
     }
   }
 
+  draw(ctx: CanvasRenderingContext2D) {
+    if (!this.flipped) {
+      super.draw(ctx)
+    } else {
+      const frameW = this.image.width / this.framesMax
+      const drawX = this.position.x - this.offset.x
+      const drawY = this.position.y - this.offset.y
+      const drawW = frameW * this.scale
+      const drawH = this.image.height * this.scale
+
+      ctx.save()
+      ctx.scale(-1, 1)
+      ctx.drawImage(
+        this.image,
+        this.framesCurrent * frameW,
+        0,
+        frameW,
+        this.image.height,
+        -(drawX + drawW),
+        drawY,
+        drawW,
+        drawH,
+      )
+      ctx.restore()
+    }
+  }
+
   update(ctx: CanvasRenderingContext2D) {
     this.draw(ctx)
     if (!this.dead) this.animateFrames()
 
-    this.attackBox.position.x = this.position.x + this.attackBox.offset.x
-    this.attackBox.position.y = this.position.y + this.attackBox.offset.y
+    // Flip attack box offset when sprite is flipped
+    if (this.flipped) {
+      this.attackBox.position.x = this.position.x - this.attackBox.offset.x - this.attackBox.width
+      this.attackBox.position.y = this.position.y + this.attackBox.offset.y
+    } else {
+      this.attackBox.position.x = this.position.x + this.attackBox.offset.x
+      this.attackBox.position.y = this.position.y + this.attackBox.offset.y
+    }
 
     this.position.x += this.velocity.x
     this.position.y += this.velocity.y
@@ -138,9 +174,21 @@ export function collides(attacker: Fighter, defender: Fighter): boolean {
 // FIGHTER CONFIGS (samuraiMack + kenji)
 // ═══════════════════════════════════════════════════════
 
-export const PLAYER_CONFIG: FighterOpts = {
-  position: { x: 0, y: 0 },
-  velocity: { x: 0, y: 0 },
+/** Base config for each character (position-independent). */
+interface CharacterConfig {
+  imageSrc: string
+  framesMax: number
+  scale: number
+  offset: { x: number; y: number }
+  sprites: Record<SpriteName, { imageSrc: string; framesMax: number }>
+  attackBox: { offset: { x: number; y: number }; width: number; height: number }
+  /** Which frame of attack1 registers the hit */
+  hitFrame: number
+  /** Which direction the sprite art naturally faces */
+  nativeFacing: Facing
+}
+
+const SAMURAI_MACK_CONFIG: CharacterConfig = {
   imageSrc: `${IMG}/samuraiMack/Idle.png`,
   framesMax: 8,
   scale: 2.5,
@@ -155,11 +203,11 @@ export const PLAYER_CONFIG: FighterOpts = {
     death: { imageSrc: `${IMG}/samuraiMack/Death.png`, framesMax: 6 },
   },
   attackBox: { offset: { x: 100, y: 50 }, width: 160, height: 50 },
+  hitFrame: 4,
+  nativeFacing: 'right',
 }
 
-export const ENEMY_CONFIG: FighterOpts = {
-  position: { x: 400, y: 100 },
-  velocity: { x: 0, y: 0 },
+const KENJI_CONFIG: CharacterConfig = {
   imageSrc: `${IMG}/kenji/Idle.png`,
   framesMax: 4,
   scale: 2.5,
@@ -174,8 +222,45 @@ export const ENEMY_CONFIG: FighterOpts = {
     death: { imageSrc: `${IMG}/kenji/Death.png`, framesMax: 7 },
   },
   attackBox: { offset: { x: -170, y: 50 }, width: 170, height: 50 },
+  hitFrame: 2,
+  nativeFacing: 'left',
 }
 
-/** Hit-frame for each fighter's attack animation */
-export const PLAYER_HIT_FRAME = 4
-export const ENEMY_HIT_FRAME = 2
+/** Map character select IDs → fighter configs. Add new fighters here. */
+const CHARACTER_CONFIGS: Record<string, CharacterConfig> = {
+  'samurai-mack': SAMURAI_MACK_CONFIG,
+  'kenji': KENJI_CONFIG,
+}
+
+/** Build a FighterOpts for the left-side (P1) position from a character ID. */
+export function getP1Config(characterId: string): FighterOpts {
+  const cfg = CHARACTER_CONFIGS[characterId] ?? SAMURAI_MACK_CONFIG
+  return {
+    ...cfg,
+    position: { x: 0, y: 0 },
+    velocity: { x: 0, y: 0 },
+    nativeFacing: cfg.nativeFacing,
+  }
+}
+
+/** Build a FighterOpts for the right-side (P2) position from a character ID. */
+export function getP2Config(characterId: string): FighterOpts {
+  const cfg = CHARACTER_CONFIGS[characterId] ?? KENJI_CONFIG
+  return {
+    ...cfg,
+    position: { x: 400, y: 100 },
+    velocity: { x: 0, y: 0 },
+    nativeFacing: cfg.nativeFacing,
+  }
+}
+
+/** Get the hit frame for a character's attack animation. */
+export function getHitFrame(characterId: string): number {
+  return (CHARACTER_CONFIGS[characterId] ?? SAMURAI_MACK_CONFIG).hitFrame
+}
+
+// Legacy exports for backwards compatibility
+export const PLAYER_CONFIG = getP1Config('samurai-mack')
+export const ENEMY_CONFIG = getP2Config('kenji')
+export const PLAYER_HIT_FRAME = SAMURAI_MACK_CONFIG.hitFrame
+export const ENEMY_HIT_FRAME = KENJI_CONFIG.hitFrame
