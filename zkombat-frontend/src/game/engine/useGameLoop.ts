@@ -43,7 +43,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
   // Loop bookkeeping
   const animRef = useRef(0)
   const timerIdRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const timerValRef = useRef(60)
+  const timerValRef = useRef(90)
   const gameOverRef = useRef(false)
 
   // Stable refs for props that change identity
@@ -64,7 +64,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
   const [p2Health, setP2Health] = useState(STARTING_HEALTH)
   const [p1Stamina, setP1Stamina] = useState(STARTING_STAMINA)
   const [p2Stamina, setP2Stamina] = useState(STARTING_STAMINA)
-  const [timer, setTimer] = useState(60)
+  const [timer, setTimer] = useState(90)
   const [displayText, setDisplayText] = useState<string | null>(null)
 
   // Initialise engine + start loop
@@ -293,11 +293,11 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
       const lf = isHostRef.current ? playerRef.current : enemyRef.current
 
       switch (e.key) {
-        case 'a': case 'A':
+        case 'ArrowLeft':
           e.preventDefault(); li.left = true; li.lastKey = 'left'; sendInput(); break
-        case 'd': case 'D':
+        case 'ArrowRight':
           e.preventDefault(); li.right = true; li.lastKey = 'right'; sendInput(); break
-        case 'w': case 'W':
+        case 'ArrowUp':
           e.preventDefault()
           if (lf && !lf.dead) lf.velocity.y = -20
           li.jumpC++; sendInput(); break
@@ -308,7 +308,7 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
             // Punch recording happens in collision resolution (hit or miss)
           }
           li.atkC++; sendInput(); break
-        case 's': case 'S':
+        case 'ArrowDown':
           e.preventDefault()
           if (!li.blocking && lf && !lf.dead) {
             li.blocking = true
@@ -325,9 +325,9 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
       const li = localRef.current
       const lf = isHostRef.current ? playerRef.current : enemyRef.current
       switch (e.key) {
-        case 'a': case 'A': li.left = false; sendInput(); break
-        case 'd': case 'D': li.right = false; sendInput(); break
-        case 's': case 'S':
+        case 'ArrowLeft': li.left = false; sendInput(); break
+        case 'ArrowRight': li.right = false; sendInput(); break
+        case 'ArrowDown':
           li.blocking = false
           if (lf) lf.stopBlock()
           sendInput()

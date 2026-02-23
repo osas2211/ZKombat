@@ -235,6 +235,34 @@ ZKombat/
 | Input Recording | `zkombat-frontend/src/game/engine/useGameLoop.ts` | How game actions feed into ZK circuit inputs |
 | Contract Service | `zkombat-frontend/src/games/zkombat/zkombatService.ts` | Real Stellar transaction construction and submission |
 
+## How to Play
+
+### Controls
+
+| Action | Key |
+|--------|-----|
+| Move Left | Arrow Left |
+| Move Right | Arrow Right |
+| Jump | Arrow Up |
+| Block | Arrow Down (hold) |
+| Attack | Spacebar |
+
+### Gameplay
+
+1. **Create or Join a Room** -- One player creates a room and shares the room code. The other player joins with the code.
+2. **Select a Character** -- Choose from 5 fighters: Samurai Mack, Kenji, Dezni, Warlock, or Ronny. Both players confirm their selection.
+3. **Fight** -- You have 60 seconds. Use attacks to deal damage and blocks to reduce incoming damage. Punches cost 15 stamina, blocks cost 5 stamina on hit, and stamina regenerates by 3 each time your opponent acts.
+4. **Prove Fair Play** -- After the fight, your browser generates a ZK proof attesting that you played fairly (no tampering, human reaction times, correct damage calculations).
+5. **On-Chain Settlement** -- Both proofs are submitted and verified on Stellar. The winner earns points and climbs the leaderboard.
+
+### Combat Tips
+
+- A punch deals **20 damage** (10 if the opponent is blocking).
+- Blocking drains stamina on hit -- drop your block when the opponent isn't attacking to save stamina.
+- Stamina regenerates passively when your opponent acts, so stay aggressive.
+- A **perfect win** (finish with 100 HP) earns a 50-point bonus.
+- A **comeback win** (finish with 20 HP or less) earns a 30-point bonus.
+
 ## Running Locally
 
 ```bash

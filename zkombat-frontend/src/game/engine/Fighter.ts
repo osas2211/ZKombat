@@ -226,10 +226,70 @@ const KENJI_CONFIG: CharacterConfig = {
   nativeFacing: 'left',
 }
 
+const DEZNI_CONFIG: CharacterConfig = {
+  imageSrc: `${IMG}/dezni/Idle.png`,
+  framesMax: 10,
+  scale: 3.0,
+  offset: { x: 215, y: 155 },
+  sprites: {
+    idle: { imageSrc: `${IMG}/dezni/Idle.png`, framesMax: 10 },
+    run: { imageSrc: `${IMG}/dezni/Run.png`, framesMax: 8 },
+    jump: { imageSrc: `${IMG}/dezni/Jump.png`, framesMax: 3 },
+    fall: { imageSrc: `${IMG}/dezni/Fall.png`, framesMax: 3 },
+    attack1: { imageSrc: `${IMG}/dezni/Attack1.png`, framesMax: 7 },
+    takeHit: { imageSrc: `${IMG}/dezni/Take hit.png`, framesMax: 3 },
+    death: { imageSrc: `${IMG}/dezni/Death.png`, framesMax: 7 },
+  },
+  attackBox: { offset: { x: 100, y: 50 }, width: 160, height: 50 },
+  hitFrame: 4,
+  nativeFacing: 'right',
+}
+
+const WARLOCK_CONFIG: CharacterConfig = {
+  imageSrc: `${IMG}/warlock/Idle.png`,
+  framesMax: 8,
+  scale: 2.0,
+  offset: { x: 215, y: 181 },
+  sprites: {
+    idle: { imageSrc: `${IMG}/warlock/Idle.png`, framesMax: 8 },
+    run: { imageSrc: `${IMG}/warlock/Run.png`, framesMax: 8 },
+    jump: { imageSrc: `${IMG}/warlock/Jump.png`, framesMax: 2 },
+    fall: { imageSrc: `${IMG}/warlock/Fall.png`, framesMax: 2 },
+    attack1: { imageSrc: `${IMG}/warlock/Attack1.png`, framesMax: 8 },
+    takeHit: { imageSrc: `${IMG}/warlock/Take hit.png`, framesMax: 3 },
+    death: { imageSrc: `${IMG}/warlock/Death.png`, framesMax: 7 },
+  },
+  attackBox: { offset: { x: 100, y: 50 }, width: 160, height: 50 },
+  hitFrame: 5,
+  nativeFacing: 'right',
+}
+
+const RONNY_CONFIG: CharacterConfig = {
+  imageSrc: `${IMG}/ronny/Idle.png`,
+  framesMax: 10,
+  scale: 2.0,
+  offset: { x: 215, y: 5 },
+  sprites: {
+    idle: { imageSrc: `${IMG}/ronny/Idle.png`, framesMax: 10 },
+    run: { imageSrc: `${IMG}/ronny/Run.png`, framesMax: 8 },
+    jump: { imageSrc: `${IMG}/ronny/Jump.png`, framesMax: 3 },
+    fall: { imageSrc: `${IMG}/ronny/Fall.png`, framesMax: 3 },
+    attack1: { imageSrc: `${IMG}/ronny/Attack1.png`, framesMax: 7 },
+    takeHit: { imageSrc: `${IMG}/ronny/Take Hit.png`, framesMax: 3 },
+    death: { imageSrc: `${IMG}/ronny/Death.png`, framesMax: 11 },
+  },
+  attackBox: { offset: { x: 100, y: 50 }, width: 160, height: 50 },
+  hitFrame: 4,
+  nativeFacing: 'right',
+}
+
 /** Map character select IDs → fighter configs. Add new fighters here. */
 const CHARACTER_CONFIGS: Record<string, CharacterConfig> = {
   'samurai-mack': SAMURAI_MACK_CONFIG,
   'kenji': KENJI_CONFIG,
+  'dezni': DEZNI_CONFIG,
+  'warlock': WARLOCK_CONFIG,
+  'ronny': RONNY_CONFIG,
 }
 
 /** Build a FighterOpts for the left-side (P1) position from a character ID. */

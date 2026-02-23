@@ -244,7 +244,7 @@
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 6px;
   width: 100%;
-  max-width: 420px;
+  max-width: 560px;
 }
 
 .cs-cell {

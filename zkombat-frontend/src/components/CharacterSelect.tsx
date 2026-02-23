@@ -24,6 +24,21 @@ const CHARACTERS: Character[] = [
     name: "Kenji",
     portrait: "/game/kenji/kenji-headshot.png",
   },
+  {
+    id: "dezni",
+    name: "Dezni",
+    portrait: "/game/dezni/dezni-headshot.png",
+  },
+  {
+    id: "warlock",
+    name: "Warlock",
+    portrait: "/game/warlock/warlock-headshot.png",
+  },
+  {
+    id: "ronny",
+    name: "Ronny",
+    portrait: "/game/ronny/ronny-headshot.png",
+  },
 ]
 
 /* ── Props ── */
