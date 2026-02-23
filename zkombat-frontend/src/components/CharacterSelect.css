@@ -82,6 +82,14 @@
     0 2px 0 rgba(0, 0, 0, 0.6);
 }
 
+.cs-headset-hint {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 0.4rem;
+}
+
 /* ── Main arena: P1 | Grid | P2 ── */
 .cs-arena {
   position: relative;

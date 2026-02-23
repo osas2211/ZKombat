@@ -55,6 +55,9 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
   onGameEndRef.current = onGameEnd
   recorderRef.current = inputRecorder
 
+  // Audio
+  const strikeSfxRef = useRef<HTMLAudioElement | null>(null)
+
   // Input
   const localRef = useRef<LocalInput>({ left: false, right: false, lastKey: null, jumpC: 0, atkC: 0, blocking: false, blockC: 0 })
   const remoteRef = useRef<RemoteInput>({ moveDir: 'none', jumpC: 0, atkC: 0, seenJ: 0, seenA: 0, blocking: false, blockC: 0, seenB: 0 })
@@ -76,6 +79,9 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
 
     // Start input recorder
     recorderRef.current?.start()
+
+    // Strike sound effect
+    strikeSfxRef.current = new Audio("/music/strike.mp3")
 
     // Scenery
     const bg = new GameSprite({ position: { x: 0, y: 0 }, imageSrc: `${IMG}/background.png` })
@@ -305,6 +311,10 @@ export function useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecor
           e.preventDefault()
           if (lf && !lf.dead) {
             lf.attack()
+            if (strikeSfxRef.current) {
+              strikeSfxRef.current.currentTime = 0
+              strikeSfxRef.current.play().catch(() => {})
+            }
             // Punch recording happens in collision resolution (hit or miss)
           }
           li.atkC++; sendInput(); break

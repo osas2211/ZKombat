@@ -69,6 +69,27 @@ export function CharacterSelect({
   const overlayRef = useRef<HTMLDivElement>(null)
   const completeCalled = useRef(false)
 
+  /* ── Audio ── */
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null)
+  const selectSfxRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const bgMusic = new Audio("/music/select-player-screen-music.mp3")
+    bgMusic.loop = true
+    bgMusic.volume = 0.15
+    bgMusic.play().catch(() => {})
+    bgMusicRef.current = bgMusic
+
+    selectSfxRef.current = new Audio("/music/on-select-sound.mp3")
+
+    return () => {
+      bgMusic.pause()
+      bgMusic.currentTime = 0
+      bgMusicRef.current = null
+    }
+  }, [isOpen])
+
   /* ── Handle incoming WebRTC messages ── */
 
   useEffect(() => {
@@ -87,6 +108,10 @@ export function CharacterSelect({
     if (localConfirmed && remoteConfirmed && !completeCalled.current) {
       completeCalled.current = true
       setShowSuccess(true)
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause()
+        bgMusicRef.current.currentTime = 0
+      }
       const lc = CHARACTERS.find((c) => c.id === localSelection)!
       const rc = CHARACTERS.find((c) => c.id === remoteSelection)!
       setTimeout(() => onComplete(lc, rc), 2500)
@@ -126,6 +151,10 @@ export function CharacterSelect({
 
   const handleSelect = (id: string) => {
     if (localConfirmed) return
+    if (selectSfxRef.current) {
+      selectSfxRef.current.currentTime = 0
+      selectSfxRef.current.play().catch(() => {})
+    }
     setLocalSelection(id)
     const c = CHARACTERS.find((ch) => ch.id === id)!
     sendRaw({ type: "character-select", characterId: c.id, characterName: c.name })
@@ -200,6 +229,7 @@ export function CharacterSelect({
       {/* Title */}
       <div className="cs-header">
         <h1 className="cs-title">Select Characters</h1>
+        <p className="cs-headset-hint">Use headset for better experience</p>
       </div>
 
       {/* Arena: P1 portrait | Grid | P2 portrait */}

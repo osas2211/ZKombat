@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import type { DataChannelMessage } from '../webrtc/types'
 import type { GameResult } from './engine/types'
 import type { InputRecorder } from '../zk/InputRecorder'
@@ -18,6 +19,21 @@ interface FightingGameProps {
 
 export function FightingGame({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder, p1CharacterId, p2CharacterId }: FightingGameProps) {
   const { canvasRef, hud } = useGameLoop({ isHost, sendRaw, rawMessage, onGameEnd, inputRecorder, p1CharacterId, p2CharacterId })
+
+  /* ── Fight music ── */
+  const fightMusicRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    const music = new Audio("/music/in-game-fight-music.mp3")
+    music.loop = true
+    music.volume = 0.35
+    music.play().catch(() => {})
+    fightMusicRef.current = music
+    return () => {
+      music.pause()
+      music.currentTime = 0
+    }
+  }, [])
 
   return (
     <div className="fighting-game">
